@@ -1,0 +1,5 @@
+Component,Qubit,Explained_Variance_Pct,Cumulative_Variance_Pct
+PC1,Qubit 0,50.0789%,50.0789%
+PC2,Qubit 1,24.1261%,74.2050%
+PC3,Qubit 2,13.1701%,87.3751%
+PC4,Qubit 3,7.5128%,94.8879%

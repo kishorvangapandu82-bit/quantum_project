@@ -1,0 +1,6 @@
+Config_ID,Feature_Map,Ansatz,Reps,Optimizer,Val_Accuracy,Val_F1_Score,Val_ROC_AUC
+VQC-1,ZZ,real_amplitudes,1,COBYLA,0.5131,0.6119,0.4495
+VQC-2,ZZ,real_amplitudes,2,COBYLA,0.4687,0.3869,0.4773
+VQC-3,Z,real_amplitudes,1,COBYLA,0.5152,0.5312,0.5124
+VQC-4,ZZ,efficient_su2,1,COBYLA,0.4606,0.3472,0.4999
+VQC-5,ZZ,real_amplitudes,1,SPSA,0.5374,0.6264,0.5364

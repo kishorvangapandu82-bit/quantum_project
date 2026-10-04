@@ -1,0 +1,4 @@
+Model,Accuracy,Precision,Recall,F1_Score,ROC_AUC,Balanced_Accuracy
+Logistic Regression,0.5000,0.5000,0.9919,0.6649,0.5223,0.5000
+Support Vector Machine,0.5000,0.5000,1.0000,0.6667,0.4725,0.5000
+Random Forest,0.5242,0.5469,0.2823,0.3723,0.5306,0.5242

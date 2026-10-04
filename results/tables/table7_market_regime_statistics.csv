@@ -1,0 +1,4 @@
+Period,Mean_Daily_Return,Daily_Volatility,Annualized_Volatility
+Train (2015-2022),0.0422%,1.1035%,17.52%
+Validation (2023-2024),0.0568%,0.7601%,12.07%
+Test (2025),0.0401%,0.7442%,11.81%

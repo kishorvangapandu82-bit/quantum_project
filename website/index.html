@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NIFTY50-VQC | Quantum vs Classical ML Research Dashboard</title>
+  <meta name="description" content="Interactive research dashboard for empirical evaluation of a 4-Qubit VQC on NIFTY 50 stock market direction prediction (2015-2025)." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <style>
+    /* ── PREDICTION SECTION ── */
+    .pred-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.4rem}
+    .inp-group{display:flex;flex-direction:column;gap:.4rem}
+    .inp-group label{font-size:.75rem;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+    .inp-group input{background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:10px;padding:.65rem .9rem;color:var(--txt);font-size:.95rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .2s}
+    .inp-group input:focus{border-color:rgba(124,58,237,.6);background:rgba(124,58,237,.05)}
+    .inp-group input::placeholder{color:var(--mut)}
+    .pred-btn{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.85rem;border-radius:12px;border:none;background:linear-gradient(135deg,var(--qm),var(--acc1));color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s;margin-bottom:1.6rem}
+    .pred-btn:hover{transform:translateY(-2px);box-shadow:0 0 35px rgba(124,58,237,.5)}
+    .pred-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .pred-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.4rem}
+    .pred-card{border-radius:16px;padding:1.4rem 1.2rem;text-align:center;border:1px solid var(--bdr);background:var(--card);backdrop-filter:blur(12px);transition:transform .3s,border-color .3s}
+    .pred-card.up{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.08)}
+    .pred-card.down{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.08)}
+    .pred-card.ensemble-up{border-color:rgba(124,58,237,.6);background:rgba(124,58,237,.1);box-shadow:0 0 25px rgba(124,58,237,.2)}
+    .pred-card.ensemble-down{border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.1)}
+    .pred-model-name{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mut);margin-bottom:.5rem}
+    .pred-arrow{font-size:2.5rem;line-height:1;margin-bottom:.4rem}
+    .pred-label{font-size:1.5rem;font-weight:900;letter-spacing:-.5px}
+    .pred-conf{font-size:.78rem;color:var(--mut);margin-top:.3rem;font-family:'JetBrains Mono',monospace}
+    .prob-bar-wrap{display:flex;height:6px;border-radius:999px;overflow:hidden;margin-top:.6rem;gap:2px}
+    .prob-up-fill{background:var(--grn);border-radius:999px;transition:width .6s ease}
+    .prob-down-fill{background:var(--red);flex:1;border-radius:999px}
+    .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;margin-top:.8rem}
+    .feat-item{background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:9px;padding:.55rem .8rem;display:flex;justify-content:space-between;align-items:center}
+    .feat-name{font-size:.73rem;color:var(--mut)}
+    .feat-val{font-size:.8rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--acc1)}
+    .pred-status{padding:.7rem 1rem;border-radius:10px;font-size:.82rem;margin-bottom:1rem;display:none}
+    .pred-status.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+    .pred-status.info{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2);color:var(--acc1)}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .offline-note{padding:1rem;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:12px;font-size:.82rem;color:var(--mut);margin-bottom:1.2rem}
+    .offline-note strong{color:var(--gold)}
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:    #050b18;
+      --card:  rgba(10,20,45,0.75);
+      --glass: rgba(255,255,255,0.04);
+      --bdr:   rgba(255,255,255,0.08);
+      --qm:    #7c3aed;
+      --qm2:   #a855f7;
+      --cl:    #0ea5e9;
+      --gold:  #f59e0b;
+      --grn:   #10b981;
+      --red:   #ef4444;
+      --txt:   #e2e8f0;
+      --mut:   #64748b;
+      --acc1:  #06b6d4;
+      --acc2:  #8b5cf6;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden}
+    #bgc{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:.35}
+    /* NAV */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1rem 2.5rem;background:rgba(5,11,24,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--bdr)}
+    .logo{font-size:1.05rem;font-weight:800;background:linear-gradient(90deg,var(--qm2),var(--acc1));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .nl{display:flex;gap:1.8rem;list-style:none}
+    .nl a{color:var(--mut);font-size:.85rem;font-weight:500;text-decoration:none;transition:color .2s}
+    .nl a:hover{color:var(--txt)}
+    /* MAIN */
+    main{position:relative;z-index:1;padding-top:72px}
+    /* HERO */
+    .hero{min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+    .glow{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+    .gp{width:600px;height:500px;background:rgba(124,58,237,.1);top:-120px;left:-100px}
+    .gb{width:450px;height:400px;background:rgba(6,182,212,.09);bottom:-50px;right:-80px}
+    .badge{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem 1rem;border-radius:999px;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.35);font-size:.76rem;font-weight:700;color:var(--qm2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.5rem;animation:fu .7s ease both}
+    h1{font-size:clamp(2rem,4.5vw,3.8rem);font-weight:900;line-height:1.1;letter-spacing:-1.5px;margin-bottom:1.1rem;animation:fu .8s .1s ease both}
+    h1 span{background:linear-gradient(135deg,var(--qm2),var(--acc1));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .sub{max-width:660px;font-size:1.05rem;color:var(--mut);line-height:1.75;margin-bottom:2.5rem;animation:fu .8s .2s ease both}
+    .ctas{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;animation:fu .8s .3s ease both}
+    .btn{padding:.7rem 1.5rem;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;border:none;transition:transform .2s,box-shadow .2s;text-decoration:none;display:inline-flex;align-items:center;gap:.45rem}
+    .btn:hover{transform:translateY(-2px)}
+    .bp{background:linear-gradient(135deg,var(--qm),var(--acc1));color:#fff;box-shadow:0 0 30px rgba(124,58,237,.4)}
+    .bp:hover{box-shadow:0 0 45px rgba(124,58,237,.6)}
+    .bg{background:var(--glass);border:1px solid var(--bdr);color:var(--txt)}
+    /* STRIPS */
+    .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1rem;padding:0 2rem 3rem;max-width:1280px;margin:0 auto;animation:fu .9s .4s ease both}
+    .mc{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:1.3rem 1.1rem;text-align:center;backdrop-filter:blur(12px);transition:transform .25s,box-shadow .25s;position:relative;overflow:hidden}
+    .mc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,.07),transparent);opacity:0;transition:opacity .3s}
+    .mc:hover{transform:translateY(-4px);box-shadow:0 12px 35px rgba(124,58,237,.15)}
+    .mc:hover::before{opacity:1}
+    .mv{font-size:1.9rem;font-weight:800;letter-spacing:-1px}
+    .ml{font-size:.75rem;color:var(--mut);margin-top:.25rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+    .ms{font-size:.7rem;color:var(--mut);margin-top:.2rem}
+    /* LAYOUT */
+    section{max-width:1280px;margin:0 auto;padding:3.5rem 2rem}
+    .sh{margin-bottom:2.2rem}
+    .st{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--qm2);margin-bottom:.5rem}
+    .stitle{font-size:clamp(1.5rem,3vw,2.1rem);font-weight:800;letter-spacing:-.5px;margin-bottom:.5rem}
+    .sdesc{color:var(--mut);font-size:.93rem;line-height:1.7;max-width:600px}
+    .div{height:1px;background:linear-gradient(90deg,transparent,var(--bdr),transparent);margin:0 2rem}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem}
+    @media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--bdr);border-radius:18px;padding:1.6rem;backdrop-filter:blur(14px);transition:transform .25s,border-color .25s}
+    .card:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.25)}
+    .ct{font-size:.95rem;font-weight:700;margin-bottom:1.1rem;display:flex;align-items:center;gap:.45rem}
+    .cw{position:relative;height:260px}
+    .cwt{position:relative;height:320px}
+    /* TABS */
+    .tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.8rem;background:var(--glass);border:1px solid var(--bdr);border-radius:11px;padding:.35rem;width:fit-content}
+    .tab{padding:.45rem 1.1rem;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--mut);transition:all .2s;border:none;background:transparent}
+    .tab.on{background:linear-gradient(135deg,var(--qm),var(--acc2));color:#fff}
+    .tab:hover:not(.on){color:var(--txt);background:var(--glass)}
+    .tc{display:none}
+    .tc.on{display:block;animation:fu .3s ease}
+    /* TABLE */
+    table{width:100%;border-collapse:collapse;font-size:.85rem}
+    th{padding:.75rem .9rem;text-align:left;color:var(--mut);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--bdr)}
+    td{padding:.75rem .9rem;border-bottom:1px solid rgba(255,255,255,.04)}
+    tr:hover td{background:rgba(255,255,255,.025)}
+    tr:last-child td{border-bottom:none}
+    .bx{padding:.18rem .6rem;border-radius:999px;font-size:.68rem;font-weight:700}
+    .bp2{background:rgba(124,58,237,.15);color:var(--qm2)}
+    .bb{background:rgba(14,165,233,.15);color:var(--cl)}
+    .bg2{background:rgba(16,185,129,.15);color:var(--grn)}
+    .br{background:rgba(239,68,68,.15);color:var(--red)}
+    .bgd{background:rgba(245,158,11,.15);color:var(--gold)}
+    /* PROGRESS */
+    .pr{display:flex;align-items:center;gap:.9rem;margin-bottom:.85rem}
+    .pl{width:170px;font-size:.8rem;color:var(--mut);flex-shrink:0}
+    .pb{flex:1;height:7px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+    .pf{height:100%;border-radius:999px;transition:width 1.6s cubic-bezier(.22,.61,.36,1)}
+    .pv{width:52px;text-align:right;font-size:.8rem;font-weight:600;font-family:'JetBrains Mono',monospace}
+    /* STAT */
+    .sr{display:flex;justify-content:space-between;align-items:center;padding:.65rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+    .sr:last-child{border-bottom:none}
+    .sk{font-size:.82rem;color:var(--mut)}
+    .sv{font-size:.88rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+    /* FINDING */
+    .fi{display:flex;gap:.9rem;align-items:flex-start;padding:1.1rem;border-radius:11px;background:rgba(255,255,255,.022);border:1px solid var(--bdr);margin-bottom:.7rem;transition:border-color .2s}
+    .fi:hover{border-color:rgba(124,58,237,.28)}
+    .fn{width:30px;height:30px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;background:linear-gradient(135deg,var(--qm),var(--acc2))}
+    .ft{font-size:.85rem;line-height:1.6;color:var(--mut)}
+    .ft strong{color:var(--txt)}
+    /* TIMELINE */
+    .tl{position:relative;padding-left:1.8rem}
+    .tl::before{content:'';position:absolute;left:.45rem;top:0;bottom:0;width:2px;background:linear-gradient(var(--qm2),var(--acc1))}
+    .ti{position:relative;margin-bottom:1rem}
+    .td{position:absolute;left:-1.6rem;top:.2rem;width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--qm2),var(--acc1));box-shadow:0 0 7px rgba(124,58,237,.5)}
+    .tt{font-size:.82rem;font-weight:700;margin-bottom:.15rem}
+    .tdesc{font-size:.75rem;color:var(--mut);line-height:1.5}
+    /* CIRCUIT */
+    .qcirc{font-family:'JetBrains Mono',monospace;padding:.5rem 0}
+    .ql{display:flex;align-items:center;gap:.3rem;margin-bottom:.7rem}
+    .qlbl{color:var(--mut);width:58px;font-size:.78rem;flex-shrink:0}
+    .gate{padding:.12rem .38rem;border-radius:4px;font-size:.68rem;font-weight:700;white-space:nowrap}
+    .gzz{background:rgba(124,58,237,.25);border:1px solid rgba(124,58,237,.5);color:var(--qm2)}
+    .gry{background:rgba(14,165,233,.2);border:1px solid rgba(14,165,233,.4);color:var(--cl)}
+    .gcz{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--gold)}
+    .gm{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:var(--grn)}
+    /* CM GRID */
+    .cm{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:1rem}
+    .cmb{text-align:center;padding:1.3rem;border-radius:11px}
+    .cmv{font-size:1.85rem;font-weight:800}
+    .cml{font-size:.72rem;color:var(--mut);margin-top:.25rem;line-height:1.4}
+    /* COLORS */
+    .cq{color:var(--qm2)}.cc{color:var(--cl)}.cg{color:var(--grn)}.cgd{color:var(--gold)}.cr{color:var(--red)}
+    /* FOOTER */
+    footer{text-align:center;padding:2.2rem;color:var(--mut);font-size:.8rem;border-top:1px solid var(--bdr);position:relative;z-index:1}
+    footer span{color:var(--qm2);font-weight:600}
+    /* ANIM */
+    @keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--qm);border-radius:3px}
+  </style>
+</head>
+<body>
+
+<canvas id="bgc"></canvas>
+
+<nav>
+  <div class="logo">⚛ NIFTY50-VQC</div>
+  <ul class="nl">
+    <li><a href="#hero">Overview</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#pca">PCA</a></li>
+    <li><a href="#vqc">VQC</a></li>
+    <li><a href="#stats">Statistics</a></li>
+    <li><a href="#regime">Regime</a></li>
+    <li><a href="#predict" style="color:var(--qm2);font-weight:700">⚡ Live Predict</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<!-- ═══ HERO ═══ -->
+<div class="hero" id="hero">
+  <div class="glow gp"></div>
+  <div class="glow gb"></div>
+  <div class="badge">⚛ Quantum Machine Learning · NIFTY 50 · 2015–2025</div>
+  <h1>Can a <span>Quantum Classifier</span><br/>Beat Classical ML<br/>on the Stock Market?</h1>
+  <p class="sub">Rigorous empirical evaluation of a <strong style="color:var(--txt)">4-Qubit Variational Quantum Classifier (VQC)</strong> for daily NIFTY 50 direction prediction across 11 years of market data. Benchmarked against Logistic Regression, SVM, and Random Forest.</p>
+  <div class="ctas">
+    <a href="#results" class="btn bp">📊 View Results</a>
+    <a href="#vqc" class="btn bg">⚛ VQC Architecture</a>
+    <a href="#stats" class="btn bg">📐 Statistical Tests</a>
+  </div>
+</div>
+
+<!-- METRIC STRIP -->
+<div class="strip">
+  <div class="mc"><div class="mv cq" id="m1">0</div><div class="ml">Trading Days</div><div class="ms">2015–2025 · NIFTY 50</div></div>
+  <div class="mc"><div class="mv cgd" id="m2">0%</div><div class="ml">Best Accuracy</div><div class="ms">Random Forest · 2025</div></div>
+  <div class="mc"><div class="mv cq">48.39%</div><div class="ml">VQC Accuracy</div><div class="ms">4-Qubit ZZ+SPSA</div></div>
+  <div class="mc"><div class="mv cg" id="m3">0%</div><div class="ml">PCA Variance</div><div class="ms">4 Components Retained</div></div>
+  <div class="mc"><div class="mv cc">p&gt;0.50</div><div class="ml">McNemar p-value</div><div class="ms">No Significant Difference</div></div>
+  <div class="mc"><div class="mv cr">4</div><div class="ml">Qubits</div><div class="ms">ZZFeatureMap · StatevectorSampler</div></div>
+</div>
+
+<div class="div"></div>
+
+<!-- ═══ RESULTS ═══ -->
+<section id="results">
+  <div class="sh">
+    <div class="st">📊 Section 01 — Master Model Comparison</div>
+    <h2 class="stitle">2025 Test Set Results (248 Trading Days)</h2>
+    <p class="sdesc">All models evaluated strictly on the untouched 2025 holdout set. No data leakage — scalers fit on training (2015–2022) only.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="sw('r','radar')" id="t-radar">🕸 Radar</button>
+    <button class="tab" onclick="sw('r','bar')" id="t-bar">📊 Bar Charts</button>
+    <button class="tab" onclick="sw('r','tbl')" id="t-tbl">📋 Full Table</button>
+  </div>
+
+  <div class="tc on" id="r-radar">
+    <div class="g2" style="align-items:start">
+      <div class="card">
+        <div class="ct">🕸 Performance Radar — All 6 Metrics</div>
+        <div class="cwt"><canvas id="radarC"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ct">📈 Key Metric Bars</div>
+        <div class="pr"><div class="pl">Accuracy (best)</div><div class="pb"><div class="pf" style="width:0%;background:linear-gradient(90deg,var(--gold),#fbbf24)" data-t="52.42"></div></div><div class="pv cgd">52.42%</div></div>
+        <div class="pr"><div class="pl">Precision (best)</div><div class="pb"><div class="pf" style="width:0%;background:linear-gradient(90deg,var(--acc1),var(--cl))" data-t="54.69"></div></div><div class="pv cc">54.69%</div></div>
+        <div class="pr"><div class="pl">Recall (best)</div><div class="pb"><div class="pf" style="width:0%;background:linear-gradient(90deg,var(--grn),#34d399)" data-t="100"></div></div><div class="pv cg">100.00%</div></div>
+        <div class="pr"><div class="pl">F1-Score (best)</div><div class="pb"><div class="pf" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#06b6d4)" data-t="66.67"></div></div><div class="pv cc">0.6667</div></div>
+        <div class="pr"><div class="pl">ROC-AUC (best)</div><div class="pb"><div class="pf" style="width:0%;background:linear-gradient(90deg,var(--qm),var(--qm2))" data-t="53.06"></div></div><div class="pv cq">0.5306</div></div>
+        <div class="pr"><div class="pl">VQC Accuracy</div><div class="pb"><div class="pf" style="width:0%;background:linear-gradient(90deg,#ef4444,#f87171)" data-t="48.39"></div></div><div class="pv cr">48.39%</div></div>
+        <div style="margin-top:1.2rem;padding:.9rem;background:rgba(255,255,255,.03);border-radius:11px;border:1px solid var(--bdr)">
+          <div class="sr"><span class="sk">🏆 Best Accuracy</span><span class="sv cgd">Random Forest 52.42%</span></div>
+          <div class="sr"><span class="sk">🏆 Best F1-Score</span><span class="sv cc">SVM 0.6667</span></div>
+          <div class="sr"><span class="sk">🏆 Best ROC-AUC</span><span class="sv cg">Random Forest 0.5306</span></div>
+          <div class="sr"><span class="sk">⚛ VQC Result</span><span class="sv cq">Acc=48.39% F1=0.6257</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tc" id="r-bar">
+    <div class="g2">
+      <div class="card"><div class="ct">📊 Accuracy Comparison</div><div class="cw"><canvas id="accC"></canvas></div></div>
+      <div class="card"><div class="ct">📉 F1 &amp; ROC-AUC</div><div class="cw"><canvas id="f1C"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="tc" id="r-tbl">
+    <div class="card">
+      <div class="ct">📋 Complete Results Table — 2025 Test Set</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>ROC-AUC</th><th>Bal. Acc</th><th>Rank</th></tr></thead>
+          <tbody>
+            <tr><td><strong class="cq">⚛ VQC (4-Qubit, ZZ+SPSA)</strong></td><td><span class="bx br">48.39%</span></td><td>0.4908</td><td><span class="bx bg2">86.29%</span></td><td>0.6257</td><td>0.4906</td><td>48.39%</td><td><span class="bx br">#4</span></td></tr>
+            <tr><td><strong class="cc">📐 Logistic Regression</strong></td><td><span class="bx bb">50.00%</span></td><td>0.5000</td><td>99.19%</td><td>0.6649</td><td>0.5223</td><td>50.00%</td><td><span class="bx bb">#3</span></td></tr>
+            <tr><td><strong class="cg">🔷 SVM (Linear, C=0.1)</strong></td><td><span class="bx bb">50.00%</span></td><td>0.5000</td><td><span class="bx bg2">100.00%</span></td><td><strong class="cg">0.6667</strong></td><td>0.4725</td><td>50.00%</td><td><span class="bx bb">#2</span></td></tr>
+            <tr><td><strong class="cgd">🌲 Random Forest (n=50, depth=3)</strong></td><td><span class="bx bgd">52.42%</span></td><td><strong class="cgd">0.5469</strong></td><td>28.23%</td><td>0.3723</td><td><strong class="cgd">0.5306</strong></td><td><strong class="cgd">52.42%</strong></td><td><span class="bx bgd">#1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ PCA ═══ -->
+<section id="pca">
+  <div class="sh">
+    <div class="st">🔬 Section 02 — PCA Dimensionality Reduction</div>
+    <h2 class="stitle">8 Features → 4 Principal Components → 4 Qubits</h2>
+    <p class="sdesc">PCA fitted strictly on training data (2015–2022). 94.89% of variance retained across 4 components mapped one-to-one onto qubits.</p>
+  </div>
+  <div class="g2" style="margin-bottom:1.4rem">
+    <div class="card"><div class="ct">📊 Explained Variance per Component</div><div class="cw"><canvas id="pcaBC"></canvas></div></div>
+    <div class="card"><div class="ct">🍩 Variance Distribution</div><div class="cw"><canvas id="pcaDC"></canvas></div></div>
+  </div>
+  <div class="g3" style="margin-bottom:1.4rem">
+    <div class="card">
+      <div class="ct">🔵 PC1 → Qubit 0 &nbsp;<span class="bx bp2">50.08%</span></div>
+      <div class="tl">
+        <div class="ti"><div class="td"></div><div class="tt">sma_5 &amp; sma_20</div><div class="tdesc">Simple Moving Averages — short &amp; medium trend</div></div>
+        <div class="ti"><div class="td"></div><div class="tt">ema_12 &amp; ema_26</div><div class="tdesc">Exponential MAs — faster weighted trend signal</div></div>
+      </div>
+      <div style="margin-top:.8rem;text-align:center;font-size:.78rem;color:var(--mut)">📌 Trend Component</div>
+    </div>
+    <div class="card">
+      <div class="ct">🟢 PC2 → Qubit 1 &nbsp;<span class="bx bg2">24.13%</span></div>
+      <div class="tl">
+        <div class="ti"><div class="td"></div><div class="tt">momentum_5</div><div class="tdesc">5-day price change — directional momentum</div></div>
+        <div class="ti"><div class="td"></div><div class="tt">rsi_14 + daily_return</div><div class="tdesc">Relative Strength Index &amp; daily % change</div></div>
+      </div>
+      <div style="margin-top:.8rem;text-align:center;font-size:.78rem;color:var(--mut)">📌 Momentum Component</div>
+    </div>
+    <div class="card">
+      <div class="ct">🟡 PC3+4 → Qubits 2–3 &nbsp;<span class="bx bgd">20.68%</span></div>
+      <div class="tl">
+        <div class="ti"><div class="td"></div><div class="tt">PC3 (13.17%): Volatility Spike</div><div class="tdesc">volatility_5 + daily_return</div></div>
+        <div class="ti"><div class="td"></div><div class="tt">PC4 (7.51%): Oscillator Divergence</div><div class="tdesc">volatility_5 + rsi_14</div></div>
+      </div>
+      <div style="margin-top:.8rem;text-align:center;font-size:.78rem;color:var(--mut)">📌 Volatility + Oscillator</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">📐 PCA Summary Table</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Component</th><th>Qubit</th><th>Explained Variance</th><th>Cumulative</th><th>Primary Features (Loadings)</th></tr></thead>
+      <tbody>
+        <tr><td><strong class="cq">PC1</strong></td><td>Q0</td><td><span class="bx bp2">50.08%</span></td><td>50.08%</td><td>sma_5, sma_20, ema_12, ema_26 (Trend)</td></tr>
+        <tr><td><strong class="cg">PC2</strong></td><td>Q1</td><td><span class="bx bg2">24.13%</span></td><td>74.21%</td><td>momentum_5, rsi_14, daily_return (Momentum)</td></tr>
+        <tr><td><strong class="cgd">PC3</strong></td><td>Q2</td><td><span class="bx bgd">13.17%</span></td><td>87.38%</td><td>volatility_5, daily_return (Volatility Spike)</td></tr>
+        <tr><td><strong class="cc">PC4</strong></td><td>Q3</td><td><span class="bx bb">7.51%</span></td><td><strong class="cg">94.89%</strong></td><td>volatility_5, rsi_14 (Oscillator Divergence)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ VQC ═══ -->
+<section id="vqc">
+  <div class="sh">
+    <div class="st">⚛ Section 03 — VQC Architecture &amp; Training</div>
+    <h2 class="stitle">4-Qubit Variational Quantum Classifier</h2>
+    <p class="sdesc">ZZFeatureMap encodes PCA-compressed features as qubit rotation angles. RealAmplitudes ansatz with 8 trainable parameters optimized via SPSA.</p>
+  </div>
+  <div class="g2" style="margin-bottom:1.4rem">
+    <div class="card">
+      <div class="ct">⚛ Quantum Circuit (Schematic)</div>
+      <div class="qcirc">
+        <div class="ql"><div class="qlbl">Q0 |0⟩</div>&nbsp;──&nbsp;<span class="gate gzz">ZZ(x₀)</span>&nbsp;──&nbsp;<span class="gate gzz">ZZx₀x₁</span>&nbsp;──&nbsp;<span class="gate gry">RY(θ₀)</span>&nbsp;──&nbsp;<span class="gate gcz">CZ</span>&nbsp;──&nbsp;<span class="gate gry">RY(θ₁)</span>&nbsp;──&nbsp;<span class="gate gm">M</span></div>
+        <div class="ql"><div class="qlbl">Q1 |0⟩</div>&nbsp;──&nbsp;<span class="gate gzz">ZZ(x₁)</span>&nbsp;──&nbsp;<span class="gate gzz">ZZx₁x₂</span>&nbsp;──&nbsp;<span class="gate gry">RY(θ₂)</span>&nbsp;──&nbsp;<span class="gate gcz">CZ</span>&nbsp;──&nbsp;<span class="gate gry">RY(θ₃)</span>&nbsp;──&nbsp;<span class="gate gm">M</span></div>
+        <div class="ql"><div class="qlbl">Q2 |0⟩</div>&nbsp;──&nbsp;<span class="gate gzz">ZZ(x₂)</span>&nbsp;──&nbsp;<span class="gate gzz">ZZx₂x₃</span>&nbsp;──&nbsp;<span class="gate gry">RY(θ₄)</span>&nbsp;──&nbsp;<span class="gate gcz">CZ</span>&nbsp;──&nbsp;<span class="gate gry">RY(θ₅)</span>&nbsp;──&nbsp;<span class="gate gm">M</span></div>
+        <div class="ql"><div class="qlbl">Q3 |0⟩</div>&nbsp;──&nbsp;<span class="gate gzz">ZZ(x₃)</span>&nbsp;──────────────&nbsp;<span class="gate gry">RY(θ₆)</span>&nbsp;───────&nbsp;<span class="gate gry">RY(θ₇)</span>&nbsp;──&nbsp;<span class="gate gm">M</span></div>
+      </div>
+      <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+        <span class="bx bp2">ZZFeatureMap reps=1</span>
+        <span class="bx bb">RealAmplitudes reps=1</span>
+        <span class="bx bgd">8 trainable θ params</span>
+        <span class="bx bg2">SPSA 40 iters</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">⚙️ VQC-5 Configuration (Selected)</div>
+      <div class="sr"><span class="sk">Qubits</span><span class="sv cq">4 (Q0–Q3)</span></div>
+      <div class="sr"><span class="sk">Feature Map</span><span class="sv">ZZFeatureMap (entangling)</span></div>
+      <div class="sr"><span class="sk">Ansatz</span><span class="sv">RealAmplitudes</span></div>
+      <div class="sr"><span class="sk">Reps</span><span class="sv">1 (linear entanglement)</span></div>
+      <div class="sr"><span class="sk">Optimizer</span><span class="sv cg">SPSA</span></div>
+      <div class="sr"><span class="sk">Iterations</span><span class="sv">40</span></div>
+      <div class="sr"><span class="sk">Trainable Params</span><span class="sv">8 (θ₀–θ₇)</span></div>
+      <div class="sr"><span class="sk">Simulator</span><span class="sv">StatevectorSampler (CPU)</span></div>
+      <div class="sr"><span class="sk">Train Samples</span><span class="sv">1,963 (full training set)</span></div>
+      <div class="sr"><span class="sk">Val Accuracy</span><span class="sv cq">53.74%</span></div>
+      <div class="sr"><span class="sk">Test Accuracy</span><span class="sv cq">48.39%</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.4rem">
+    <div class="ct">🔬 VQC Architecture Tuning — 5 Configurations on Validation Set</div>
+    <div class="g2" style="align-items:start">
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Config</th><th>Map</th><th>Ansatz</th><th>Opt.</th><th>Val Acc</th><th>Val F1</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>VQC-1</td><td>ZZ</td><td>RealAmp</td><td>COBYLA</td><td>51.31%</td><td>0.6119</td><td><span class="bx bb">Tested</span></td></tr>
+          <tr><td>VQC-2</td><td>ZZ</td><td>RealAmp r=2</td><td>COBYLA</td><td>46.87%</td><td>0.3869</td><td><span class="bx br">Worse</span></td></tr>
+          <tr><td>VQC-3</td><td>Z</td><td>RealAmp</td><td>COBYLA</td><td>51.52%</td><td>0.5313</td><td><span class="bx bb">Tested</span></td></tr>
+          <tr><td>VQC-4</td><td>ZZ</td><td>EfficSU2</td><td>COBYLA</td><td>46.06%</td><td>0.3472</td><td><span class="bx br">Worst</span></td></tr>
+          <tr style="background:rgba(124,58,237,.08)"><td><strong class="cq">VQC-5 ★</strong></td><td><strong>ZZ</strong></td><td><strong>RealAmp</strong></td><td><strong class="cg">SPSA</strong></td><td><strong class="cq">53.74%</strong></td><td><strong class="cq">0.6264</strong></td><td><span class="bx bp2">SELECTED</span></td></tr>
+        </tbody>
+      </table></div>
+      <div><div class="cw"><canvas id="tuneC"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ct">🎯 VQC Confusion Matrix — 2025 Test Set</div>
+      <div class="cm">
+        <div class="cmb" style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3)"><div class="cmv cg">107</div><div class="cml">TRUE POSITIVE<br/>(UP correctly predicted)</div></div>
+        <div class="cmb" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3)"><div class="cmv cr">114</div><div class="cml">FALSE POSITIVE<br/>(DOWN pred. as UP)</div></div>
+        <div class="cmb" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3)"><div class="cmv cr">17</div><div class="cml">FALSE NEGATIVE<br/>(UP pred. as DOWN)</div></div>
+        <div class="cmb" style="background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.3)"><div class="cmv" style="color:var(--mut)">10</div><div class="cml">TRUE NEGATIVE<br/>(DOWN correctly pred.)</div></div>
+      </div>
+      <div style="margin-top:.9rem;padding:.75rem;background:rgba(245,158,11,.07);border-radius:9px;border:1px solid rgba(245,158,11,.2);font-size:.79rem">
+        <span class="cgd" style="font-weight:700">⚠ UP-Day Bias: </span><span style="color:var(--mut)">Recall=86.29% but Specificity=8.06%. VQC learned the positive market drift of 2015–2022 training and almost always predicts UP.</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">📊 Recall vs Specificity — All Models</div>
+      <div class="cw"><canvas id="rcC"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ STATISTICS ═══ -->
+<section id="stats">
+  <div class="sh">
+    <div class="st">📐 Section 04 — Statistical Significance Testing</div>
+    <h2 class="stitle">McNemar's Exact Test (α = 0.05)</h2>
+    <p class="sdesc">Tests whether observed performance differences between models are statistically meaningful or within random noise on n=248 test samples.</p>
+  </div>
+  <div class="g2" style="margin-bottom:1.4rem">
+    <div class="card"><div class="ct">📊 McNemar p-values (α=0.05 threshold in red)</div><div class="cw"><canvas id="mcC"></canvas></div></div>
+    <div class="card">
+      <div class="ct">📋 McNemar Test Results</div>
+      <table><thead><tr><th>Comparison</th><th>b</th><th>c</th><th>p-value</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>VQC vs Logistic Regression</td><td>9</td><td>12</td><td style="font-family:'JetBrains Mono',monospace">0.6636</td><td><span class="bx bb">Not Significant</span></td></tr>
+        <tr><td>VQC vs SVM</td><td>10</td><td>13</td><td style="font-family:'JetBrains Mono',monospace">0.6776</td><td><span class="bx bb">Not Significant</span></td></tr>
+        <tr><td>VQC vs Random Forest</td><td>93</td><td>102</td><td style="font-family:'JetBrains Mono',monospace">0.5668</td><td><span class="bx bb">Not Significant</span></td></tr>
+        <tr><td>LR vs Random Forest</td><td>89</td><td>95</td><td style="font-family:'JetBrains Mono',monospace">0.7125</td><td><span class="bx bb">Not Significant</span></td></tr>
+      </tbody></table>
+      <div style="margin-top:.9rem;padding:.75rem;background:rgba(14,165,233,.07);border-radius:9px;border:1px solid rgba(14,165,233,.2);font-size:.79rem">
+        <span class="cc" style="font-weight:700">📌 </span><span style="color:var(--mut)">All p-values far exceed α=0.05. No model pair is statistically different. Performance differences are statistical noise on n=248.</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">💡 Key Research Findings</div>
+    <div class="fi"><div class="fn">1</div><div class="ft"><strong>No quantum advantage detected.</strong> VQC (48.39%) performs below all classical baselines under 4-qubit NISQ simulation. Shallow circuits on noisy financial time-series do not outperform classical methods.</div></div>
+    <div class="fi"><div class="fn">2</div><div class="ft"><strong>All models near random chance.</strong> With 50% class balance on 2025 test set, a baseline guesser achieves 50%. LR and SVM hit exactly 50% — barely above random. Best classical: RF at 52.42%.</div></div>
+    <div class="fi"><div class="fn">3</div><div class="ft"><strong>VQC systematic UP-day bias.</strong> VQC learned the positive drift of NIFTY 50 in training (2015–2022: 53.49% UP). This leads to Recall=86.29% but Specificity=8.06% — it almost always predicts UP.</div></div>
+    <div class="fi"><div class="fn">4</div><div class="ft"><strong>Statistical noise dominates.</strong> McNemar p-values range 0.56–0.71. At n=248, no pair is distinguishable at any conventional significance level (p&lt;0.05, p&lt;0.10, p&lt;0.20).</div></div>
+    <div class="fi"><div class="fn">5</div><div class="ft"><strong>PCA compression is efficient.</strong> 4 PCs retain 94.89% of variance across 8 technical indicators — near-lossless compression for quantum encoding.</div></div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ REGIME ═══ -->
+<section id="regime">
+  <div class="sh">
+    <div class="st">📉 Section 05 — Market Regime &amp; Non-Stationarity</div>
+    <h2 class="stitle">Volatility Regime Shift: Training → Test</h2>
+    <p class="sdesc">Annualised volatility dropped 33% from the training period (17.52%) to the 2025 test period (11.81%), challenging model generalization.</p>
+  </div>
+  <div class="g2" style="margin-bottom:1.4rem">
+    <div class="card"><div class="ct">📊 Annualised Volatility by Period</div><div class="cw"><canvas id="volC"></canvas></div></div>
+    <div class="card">
+      <div class="ct">📋 Market Regime Statistics</div>
+      <table><thead><tr><th>Period</th><th>Mean Daily Ret.</th><th>Daily Vol.</th><th>Ann. Vol.</th></tr></thead>
+      <tbody>
+        <tr><td><span class="bx bp2">Train 2015–2022</span></td><td>0.0422%</td><td>1.1035%</td><td><strong class="cr">17.52%</strong></td></tr>
+        <tr><td><span class="bx bgd">Val 2023–2024</span></td><td>0.0568%</td><td>0.7601%</td><td><strong class="cgd">12.07%</strong></td></tr>
+        <tr><td><span class="bx bg2">Test 2025</span></td><td>0.0401%</td><td>0.7442%</td><td><strong class="cg">11.81%</strong></td></tr>
+      </tbody></table>
+      <div style="margin-top:.9rem;padding:.75rem;background:rgba(239,68,68,.07);border-radius:9px;border:1px solid rgba(239,68,68,.2);font-size:.79rem">
+        <span class="cr" style="font-weight:700">⚠ Regime Shift: </span><span style="color:var(--mut)">33% drop in annualised volatility (17.52% → 11.81%). Patterns from high-volatility training may not transfer to calmer 2025 market conditions.</span>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">⚠️ Study Limitations</div>
+      <div class="fi"><div class="fn" style="background:rgba(239,68,68,.2);color:var(--red)">!</div><div class="ft"><strong>4-qubit constraint:</strong> Forces PCA compression, stripping some high-frequency signals from the feature space.</div></div>
+      <div class="fi"><div class="fn" style="background:rgba(239,68,68,.2);color:var(--red)">!</div><div class="ft"><strong>Simulation only:</strong> Not tested on real quantum hardware. Physical QPU noise would further degrade performance.</div></div>
+      <div class="fi"><div class="fn" style="background:rgba(239,68,68,.2);color:var(--red)">!</div><div class="ft"><strong>Limited features:</strong> Only 8 technical indicators. Fundamental data, macro factors, and sentiment excluded.</div></div>
+      <div class="fi"><div class="fn" style="background:rgba(239,68,68,.2);color:var(--red)">!</div><div class="ft"><strong>No trading strategy:</strong> Pure classification accuracy study — no transaction costs, no portfolio backtest.</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">💻 Experimental Environment</div>
+      <div class="sr"><span class="sk">Python</span><span class="sv">3.11.9</span></div>
+      <div class="sr"><span class="sk">Qiskit</span><span class="sv cq">2.5.2</span></div>
+      <div class="sr"><span class="sk">qiskit-machine-learning</span><span class="sv">0.9.1</span></div>
+      <div class="sr"><span class="sk">scikit-learn</span><span class="sv">1.9.1</span></div>
+      <div class="sr"><span class="sk">OS</span><span class="sv">Windows 11, 64-bit</span></div>
+      <div class="sr"><span class="sk">CPU</span><span class="sv">Intel Core i7-13650HX</span></div>
+      <div class="sr"><span class="sk">RAM</span><span class="sv">16 GB</span></div>
+      <div class="sr"><span class="sk">Simulator</span><span class="sv">StatevectorSampler (CPU)</span></div>
+      <div class="sr"><span class="sk">Random Seed</span><span class="sv">42</span></div>
+      <div class="sr"><span class="sk">GPU</span><span class="sv" style="color:var(--mut)">RTX 5050 (not used)</span></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>⚛ <span>NIFTY50-VQC Research Project</span> &nbsp;|&nbsp; Completed 2026-10-03 &nbsp;|&nbsp; Qiskit 2.5.2 · Python 3.11.9 · scikit-learn 1.9.1</p>
+  <p style="margin-top:.45rem;font-size:.74rem">⚠ Academic classification experiment — NOT financial advice. Results should not be used for trading decisions.</p>
+</footer>
+
+<script>
+// ── PARTICLE CANVAS ──
+const cv=document.getElementById('bgc'),ctx=cv.getContext('2d');
+let W,H,pts=[];
+function rsz(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight}rsz();window.addEventListener('resize',rsz);
+class P{constructor(){this.r()}r(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.28;this.vy=(Math.random()-.5)*.28;this.rad=Math.random()*1.4+.4;this.a=Math.random()*.55+.18;this.col=Math.random()>.5?'124,58,237':'6,182,212'}u(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>W||this.y<0||this.y>H)this.r()}d(){ctx.beginPath();ctx.arc(this.x,this.y,this.rad,0,Math.PI*2);ctx.fillStyle=`rgba(${this.col},${this.a})`;ctx.fill()}}
+for(let i=0;i<85;i++)pts.push(new P());
+function lines(){for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<110){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(124,58,237,${.13*(1-d/110)})`;ctx.lineWidth=.45;ctx.stroke()}}}
+function anim(){ctx.clearRect(0,0,W,H);lines();pts.forEach(p=>{p.u();p.d()});requestAnimationFrame(anim)}anim();
+
+// ── COUNTERS ──
+function cnt(el,t,suf,dec=0){let s=0,step=t/1800*16;const id=setInterval(()=>{s+=step;if(s>=t){s=t;clearInterval(id)}el.textContent=s.toFixed(dec)+suf},16)}
+setTimeout(()=>{cnt(document.getElementById('m1'),2706,'');cnt(document.getElementById('m2'),52.42,'%',2);cnt(document.getElementById('m3'),94.89,'%',2)},300);
+
+// ── PROGRESS BARS ──
+setTimeout(()=>{document.querySelectorAll('.pf').forEach(e=>{e.style.width=e.dataset.t+'%'})},400);
+
+// ── TABS ──
+const tStates={};
+function sw(grp,id){
+  document.querySelectorAll('.tc').forEach(e=>{if(e.id.startsWith(grp+'-'))e.classList.remove('on')});
+  document.querySelectorAll('.tab').forEach(e=>{if(e.id.startsWith('t-'))e.classList.remove('on')});
+  document.getElementById(grp+'-'+id).classList.add('on');
+  document.getElementById('t-'+id).classList.add('on');
+}
+
+// ── CHART DEFAULTS ──
+Chart.defaults.color='#64748b';Chart.defaults.font.family="'Inter',sans-serif";
+
+// RADAR
+new Chart(document.getElementById('radarC'),{type:'radar',data:{
+  labels:['Accuracy','Precision','Recall','F1-Score','ROC-AUC','Bal. Acc'],
+  datasets:[
+    {label:'VQC',data:[48.39,49.08,86.29,62.57,49.06,48.39],borderColor:'rgba(124,58,237,1)',backgroundColor:'rgba(124,58,237,.15)',pointBackgroundColor:'rgba(124,58,237,1)',borderWidth:2.5},
+    {label:'LR',data:[50,50,99.19,66.49,52.23,50],borderColor:'rgba(14,165,233,1)',backgroundColor:'rgba(14,165,233,.1)',pointBackgroundColor:'rgba(14,165,233,1)',borderWidth:2},
+    {label:'SVM',data:[50,50,100,66.67,47.25,50],borderColor:'rgba(16,185,129,1)',backgroundColor:'rgba(16,185,129,.1)',pointBackgroundColor:'rgba(16,185,129,1)',borderWidth:2},
+    {label:'RF',data:[52.42,54.69,28.23,37.23,53.06,52.42],borderColor:'rgba(245,158,11,1)',backgroundColor:'rgba(245,158,11,.1)',pointBackgroundColor:'rgba(245,158,11,1)',borderWidth:2}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+  scales:{r:{beginAtZero:true,max:100,grid:{color:'rgba(255,255,255,.07)'},ticks:{color:'rgba(255,255,255,.25)',backdropColor:'transparent',font:{size:8}}}},
+  plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:10}}}}}});
+
+// ACC BAR
+new Chart(document.getElementById('accC'),{type:'bar',data:{
+  labels:['VQC','LR','SVM','RF'],
+  datasets:[{label:'Accuracy (%)',data:[48.39,50,50,52.42],backgroundColor:['rgba(124,58,237,.85)','rgba(14,165,233,.85)','rgba(16,185,129,.85)','rgba(245,158,11,.85)'],borderRadius:8}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:false,min:44,max:56,grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+
+// F1 BAR
+new Chart(document.getElementById('f1C'),{type:'bar',data:{
+  labels:['VQC','LR','SVM','RF'],
+  datasets:[
+    {label:'F1-Score',data:[0.6257,0.6649,0.6667,0.3723],backgroundColor:['rgba(124,58,237,.85)','rgba(14,165,233,.85)','rgba(16,185,129,.85)','rgba(245,158,11,.85)'],borderRadius:8},
+    {label:'ROC-AUC',data:[0.4906,0.5223,0.4725,0.5306],backgroundColor:['rgba(124,58,237,.35)','rgba(14,165,233,.35)','rgba(16,185,129,.35)','rgba(245,158,11,.35)'],borderRadius:8}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:.8,grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+
+// PCA BAR
+new Chart(document.getElementById('pcaBC'),{type:'bar',data:{
+  labels:['PC1 (Trend)','PC2 (Momentum)','PC3 (Volatility)','PC4 (Oscillator)'],
+  datasets:[{label:'Explained Variance (%)',data:[50.08,24.13,13.17,7.51],backgroundColor:['rgba(124,58,237,.88)','rgba(16,185,129,.88)','rgba(245,158,11,.88)','rgba(14,165,233,.88)'],borderRadius:10}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:55,ticks:{callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+
+// PCA DOUGHNUT
+new Chart(document.getElementById('pcaDC'),{type:'doughnut',data:{
+  labels:['PC1 Trend 50.08%','PC2 Momentum 24.13%','PC3 Volatility 13.17%','PC4 Oscillator 7.51%','Dropped 5.11%'],
+  datasets:[{data:[50.08,24.13,13.17,7.51,5.11],backgroundColor:['rgba(124,58,237,.9)','rgba(16,185,129,.9)','rgba(245,158,11,.9)','rgba(14,165,233,.9)','rgba(100,116,139,.4)'],borderColor:['rgba(124,58,237,1)','rgba(16,185,129,1)','rgba(245,158,11,1)','rgba(14,165,233,1)','rgba(100,116,139,.6)'],borderWidth:2}]
+},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:9,font:{size:9}}}}}});
+
+// TUNING
+new Chart(document.getElementById('tuneC'),{type:'bar',data:{
+  labels:['VQC-1','VQC-2','VQC-3','VQC-4','VQC-5★'],
+  datasets:[
+    {label:'Val Accuracy %',data:[51.31,46.87,51.52,46.06,53.74],backgroundColor:['rgba(100,116,139,.6)','rgba(100,116,139,.6)','rgba(100,116,139,.6)','rgba(100,116,139,.6)','rgba(124,58,237,.9)'],borderRadius:8},
+    {label:'Val F1×100',data:[61.19,38.69,53.12,34.72,62.64],backgroundColor:['rgba(100,116,139,.3)','rgba(100,116,139,.3)','rgba(100,116,139,.3)','rgba(100,116,139,.3)','rgba(167,85,247,.5)'],borderRadius:8}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:70,grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+
+// RECALL vs SPEC
+new Chart(document.getElementById('rcC'),{type:'bar',data:{
+  labels:['VQC','LR','SVM','RF'],
+  datasets:[
+    {label:'Recall (Sensitivity) %',data:[86.29,99.19,100,28.23],backgroundColor:['rgba(124,58,237,.85)','rgba(14,165,233,.85)','rgba(16,185,129,.85)','rgba(245,158,11,.85)'],borderRadius:8},
+    {label:'Specificity %',data:[8.06,0.81,0,76.22],backgroundColor:['rgba(124,58,237,.3)','rgba(14,165,233,.3)','rgba(16,185,129,.3)','rgba(245,158,11,.3)'],borderRadius:8}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:115,ticks:{callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+
+// MCNEMAR
+new Chart(document.getElementById('mcC'),{type:'bar',data:{
+  labels:['VQC vs LR','VQC vs SVM','VQC vs RF','LR vs RF'],
+  datasets:[
+    {label:'p-value',data:[0.6636,0.6776,0.5668,0.7125],backgroundColor:'rgba(14,165,233,.78)',borderRadius:9,borderColor:'rgba(14,165,233,1)',borderWidth:1.5},
+    {label:'α=0.05',data:[0.05,0.05,0.05,0.05],type:'line',borderColor:'rgba(239,68,68,.8)',borderDash:[6,4],pointRadius:0,borderWidth:2,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:.85,ticks:{callback:v=>v.toFixed(2)},grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+
+// VOLATILITY
+new Chart(document.getElementById('volC'),{type:'bar',data:{
+  labels:['Train (2015–2022)','Validation (2023–2024)','Test (2025)'],
+  datasets:[{label:'Annualised Volatility %',data:[17.52,12.07,11.81],backgroundColor:['rgba(239,68,68,.85)','rgba(245,158,11,.85)','rgba(16,185,129,.85)'],borderRadius:12}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:22,ticks:{callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+
+// SCROLL REVEAL
+const io=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.style.animation='fu .55s ease both';x.target.style.opacity='1'}}),{threshold:.07});
+document.querySelectorAll('.card,.mc').forEach(el=>{el.style.opacity='0';io.observe(el)});
+
+// SCROLL REVEAL already set above
+</script>
+
+<!-- ══════ PREDICTION SECTION (injected) ══════ -->
+<style>
+.pred-section{max-width:1280px;margin:0 auto;padding:3.5rem 2rem}
+</style>
+
+<div class="div" style="position:relative;z-index:1"></div>
+
+<section class="pred-section" id="predict" style="position:relative;z-index:1">
+  <div class="sh">
+    <div class="st">⚡ Section 06 — Live Next-Day Prediction</div>
+    <h2 class="stitle">Predict Tomorrow's NIFTY 50 Direction</h2>
+    <p class="sdesc">Enter today's OHLCV data. All 4 models compute features, run the full preprocessing pipeline, and vote on UP or DOWN for the next trading day.</p>
+  </div>
+
+  <div class="offline-note">
+    <strong>⚠ Prediction API required:</strong> This form calls the local prediction server on <code style="color:var(--qm2)">http://localhost:5050</code>.
+    Start it with: <code style="color:var(--acc1)">.venv\Scripts\python.exe prediction_server.py</code>
+    &nbsp;·&nbsp; Models must be trained first: <code style="color:var(--acc1)">.venv\Scripts\python.exe phase20_save_models.py</code>
+  </div>
+
+  <div id="pred-status-box" class="pred-status"></div>
+
+  <div class="card" style="margin-bottom:1.4rem">
+    <div class="ct">📥 Today's NIFTY 50 OHLCV Input</div>
+    <div class="pred-form">
+      <div class="inp-group">
+        <label>📅 Date</label>
+        <input type="date" id="pi-date" />
+      </div>
+      <div class="inp-group">
+        <label>📈 Open</label>
+        <input type="number" id="pi-open" placeholder="e.g. 24500" step="0.01" />
+      </div>
+      <div class="inp-group">
+        <label>🔺 High</label>
+        <input type="number" id="pi-high" placeholder="e.g. 24750" step="0.01" />
+      </div>
+      <div class="inp-group">
+        <label>🔻 Low</label>
+        <input type="number" id="pi-low" placeholder="e.g. 24400" step="0.01" />
+      </div>
+      <div class="inp-group">
+        <label>💰 Close</label>
+        <input type="number" id="pi-close" placeholder="e.g. 24680" step="0.01" />
+      </div>
+    </div>
+    <button class="pred-btn" id="pred-btn" onclick="runPrediction()">
+      <span id="btn-icon">⚡</span> <span id="btn-text">Run Prediction — All 4 Models</span>
+    </button>
+
+    <!-- Results grid -->
+    <div class="pred-results" id="pred-results" style="display:none">
+      <div class="pred-card" id="pc-vqc">
+        <div class="pred-model-name">⚛ VQC (4-Qubit)</div>
+        <div class="pred-arrow" id="pa-vqc">—</div>
+        <div class="pred-label" id="pl-vqc">—</div>
+        <div class="pred-conf" id="pconf-vqc"></div>
+        <div class="prob-bar-wrap"><div class="prob-up-fill" id="pb-vqc" style="width:50%"></div><div class="prob-down-fill"></div></div>
+      </div>
+      <div class="pred-card" id="pc-lr">
+        <div class="pred-model-name">📐 Logistic Regression</div>
+        <div class="pred-arrow" id="pa-lr">—</div>
+        <div class="pred-label" id="pl-lr">—</div>
+        <div class="pred-conf" id="pconf-lr"></div>
+        <div class="prob-bar-wrap"><div class="prob-up-fill" id="pb-lr" style="width:50%"></div><div class="prob-down-fill"></div></div>
+      </div>
+      <div class="pred-card" id="pc-svm">
+        <div class="pred-model-name">🔷 SVM (Linear)</div>
+        <div class="pred-arrow" id="pa-svm">—</div>
+        <div class="pred-label" id="pl-svm">—</div>
+        <div class="pred-conf" id="pconf-svm"></div>
+        <div class="prob-bar-wrap"><div class="prob-up-fill" id="pb-svm" style="width:50%"></div><div class="prob-down-fill"></div></div>
+      </div>
+      <div class="pred-card" id="pc-rf">
+        <div class="pred-model-name">🌲 Random Forest</div>
+        <div class="pred-arrow" id="pa-rf">—</div>
+        <div class="pred-label" id="pl-rf">—</div>
+        <div class="pred-conf" id="pconf-rf"></div>
+        <div class="prob-bar-wrap"><div class="prob-up-fill" id="pb-rf" style="width:50%"></div><div class="prob-down-fill"></div></div>
+      </div>
+      <div class="pred-card" id="pc-ens" style="grid-column:1/-1">
+        <div class="pred-model-name" style="font-size:.85rem">🗳 Ensemble Majority Vote (4 Models)</div>
+        <div class="pred-arrow" id="pa-ens" style="font-size:3.5rem">—</div>
+        <div class="pred-label" id="pl-ens" style="font-size:2.2rem">—</div>
+        <div class="pred-conf" id="pconf-ens"></div>
+      </div>
+    </div>
+
+    <!-- Computed features -->
+    <div id="feat-section" style="display:none">
+      <div class="ct" style="margin-top:1.2rem">🔬 Computed Technical Features (8 indicators → 4 PCA components → prediction)</div>
+      <div class="feat-grid" id="feat-grid"></div>
+      <div style="margin-top:.8rem;font-size:.76rem;color:var(--mut)">
+        ⚠ <strong style="color:var(--gold)">Disclaimer:</strong>
+        This is an academic research model. All test-set accuracies are near random chance (48–52%).
+        Do NOT use for real trading decisions.
+        <span id="elapsed-text"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// ── PREDICTION LOGIC ──
+const API = 'http://localhost:5050';
+
+// Set today's date as default
+document.getElementById('pi-date').value = new Date().toISOString().split('T')[0];
+
+function showStatus(msg, type='info'){
+  const box = document.getElementById('pred-status-box');
+  box.textContent = msg; box.className = 'pred-status ' + type;
+  box.style.display = 'block';
+}
+function hideStatus(){ document.getElementById('pred-status-box').style.display='none' }
+
+function setCard(id, pred){
+  const isUp = pred.label === 'UP';
+  const card = document.getElementById('pc-'+id);
+  const isEns = id === 'ens';
+  card.className = 'pred-card ' + (isEns ? (isUp?'ensemble-up':'ensemble-down') : (isUp?'up':'down'));
+  document.getElementById('pa-'+id).textContent = isUp ? '📈' : '📉';
+  document.getElementById('pl-'+id).textContent  = pred.label;
+  document.getElementById('pl-'+id).style.color  = isUp ? 'var(--grn)' : 'var(--red)';
+  const confEl = document.getElementById('pconf-'+id);
+  if(isEns){
+    confEl.textContent = `${pred.votes_up}/4 voted UP · ${pred.votes_down}/4 voted DOWN`;
+  } else if(pred.confidence !== null){
+    confEl.textContent = `Confidence: ${(pred.confidence*100).toFixed(1)}%`;
+    const pb = document.getElementById('pb-'+id);
+    if(pb) pb.style.width = (pred.prob_up*100)+'%';
+  } else {
+    confEl.textContent = 'No probability output (quantum)';
+  }
+}
+
+async function runPrediction(){
+  const o = parseFloat(document.getElementById('pi-open').value);
+  const h = parseFloat(document.getElementById('pi-high').value);
+  const l = parseFloat(document.getElementById('pi-low').value);
+  const c = parseFloat(document.getElementById('pi-close').value);
+  const d = document.getElementById('pi-date').value;
+
+  if([o,h,l,c].some(isNaN)||!d){
+    showStatus('❌ Please fill in all fields: Date, Open, High, Low, Close.','err'); return;
+  }
+  if(h < l){ showStatus('❌ High must be >= Low.','err'); return; }
+
+  const btn = document.getElementById('pred-btn');
+  const btnIcon = document.getElementById('btn-icon');
+  const btnText = document.getElementById('btn-text');
+  btn.disabled = true;
+  btnIcon.innerHTML = '<span class="spinner"></span>';
+  btnText.textContent = 'Running all 4 models...';
+  hideStatus();
+  document.getElementById('pred-results').style.display = 'none';
+  document.getElementById('feat-section').style.display = 'none';
+
+  try{
+    showStatus('⏳ Connecting to prediction server at localhost:5050...','info');
+    const resp = await fetch(`${API}/predict`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({date:d, open:o, high:h, low:l, close:c})
+    });
+    const data = await resp.json();
+
+    if(data.error){ showStatus('❌ Server error: '+data.error,'err'); return; }
+    hideStatus();
+
+    // Show result cards
+    const p = data.predictions;
+    setCard('vqc', p.vqc);
+    setCard('lr',  p.lr);
+    setCard('svm', p.svm);
+    setCard('rf',  p.rf);
+    setCard('ens', p.ensemble);
+    document.getElementById('pred-results').style.display = 'grid';
+
+    // Show features
+    const fg = document.getElementById('feat-grid');
+    const featNames = {'daily_return':'Daily Return','sma_5':'SMA 5','sma_20':'SMA 20',
+                       'ema_12':'EMA 12','ema_26':'EMA 26','rsi_14':'RSI 14',
+                       'volatility_5':'Volatility 5','momentum_5':'Momentum 5'};
+    fg.innerHTML = Object.entries(data.features).map(([k,v])=>
+      `<div class="feat-item"><span class="feat-name">${featNames[k]||k}</span><span class="feat-val">${v}</span></div>`
+    ).join('');
+    document.getElementById('elapsed-text').textContent = ` · Inference time: ${data.elapsed_s}s`;
+    document.getElementById('feat-section').style.display = 'block';
+
+  } catch(err){
+    showStatus('❌ Cannot connect to prediction server. Start it with: .venv\\Scripts\\python.exe prediction_server.py','err');
+  } finally {
+    btn.disabled = false;
+    btnIcon.textContent = '⚡';
+    btnText.textContent = 'Run Prediction — All 4 Models';
+  }
+}
+</script>
+</body>
+</html>

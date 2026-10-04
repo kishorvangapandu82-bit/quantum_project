@@ -1,0 +1,137 @@
+# ============================================================
+# ENVIRONMENT INFORMATION
+# NIFTY50-VQC Project — Reproducibility Record
+# ============================================================
+# Generated: 2026-10-02
+# Last Updated: 2026-10-03 (all phases complete)
+# Last Updated: 2026-10-03 (all phases complete)
+# ============================================================
+
+SYSTEM ENVIRONMENT
+==================
+
+Python Version    : 3.11.9
+pip Version       : 26.2.1
+
+Operating System  : Microsoft Windows 11 Home Single Language
+OS Version (NT)   : 10.0.26200.0
+Architecture      : 64-bit
+
+CPU
+===
+Model             : Intel Core i7-13650HX (13th Gen, Raptor Lake-HX)
+Physical Cores    : 14
+Logical Processors: 20 (Hyper-Threading enabled)
+Base Clock        : 2600 MHz (2.6 GHz)
+Note              : High-performance mobile processor
+
+RAM
+===
+Total RAM         : 15.71 GB (~16 GB)
+
+GPU
+===
+GPU 1 (Integrated): Intel UHD Graphics (RaptorLake-S Mobile)
+GPU 2 (Dedicated) : NVIDIA GeForce RTX 5050 Laptop GPU
+NVIDIA VRAM       : 8 GB GDDR
+NVIDIA Driver     : 616.92
+GPU Architecture  : Blackwell (GB10x series)
+
+CUDA
+====
+CUDA Runtime      : 13.4 (via NVIDIA driver)
+CUDA Toolkit      : NOT installed (nvcc not found)
+qiskit-aer-gpu    : NOT available for Windows on PyPI
+GPU Simulation    : NOT used — CPU simulation only
+
+VERSION CONTROL
+===============
+Git               : 2.55.0.windows.5
+
+KEY PACKAGE VERSIONS
+====================
+qiskit                  : 2.5.2
+qiskit-aer              : 0.17.2   (CPU only, statevector method)
+qiskit-machine-learning : 0.9.1
+numpy                   : 2.4.6
+pandas                  : 3.0.6
+scipy                   : 1.17.1
+scikit-learn            : 1.9.1
+matplotlib              : 3.11.2
+seaborn                 : 0.13.2
+jupyter                 : 1.1.1
+ipykernel               : 7.4.0
+
+QUANTUM SIMULATION CONFIGURATION
+=================================
+Simulator         : AerSimulator (qiskit-aer 0.17.2)
+Method            : statevector (exact simulation)
+Backend           : CPU
+Qubits            : 4 (initial experimental configuration)
+GPU Acceleration  : NOT available on Windows
+
+ENCODING NOTE
+=============
+Windows terminal encoding: cp1252
+Fix applied      : PYTHONUTF8=1 environment variable
+                   (required for Qiskit circuit diagram display)
+
+PHASE COMPLETION STATUS
+=======================
+Phase 0  — Environment Inspection    : COMPLETE (2026-10-02)
+Phase 1  — Virtual Environment       : COMPLETE (2026-10-02)
+Phase 2  — Package Installation      : COMPLETE (2026-10-02)
+Phase 3  — Qiskit Basic Test         : COMPLETE (2026-10-02)
+           Bell State verification: PASSED
+           '00': 498/1024 (48.6%), '11': 526/1024 (51.4%)
+Phase 4  — GPU/Simulator Test        : COMPLETE (2026-10-02)
+           Finding: CPU simulation only
+Phase 5  - Data Import & Inspection    : COMPLETE (2026-10-02)
+           11 CSVs loaded; 2,726 raw rows; all columns validated
+Phase 6  - Data Cleaning & Combination : COMPLETE (2026-10-02)
+           Combined: 2,726 rows, zero duplicates, zero missing values
+Phase 7  - EDA                         : COMPLETE (2026-10-02)
+           Price trend, return distribution, annual returns figures generated
+Phase 8  - Target Construction         : COMPLETE (2026-10-02)
+           2,725 rows with binary target; UP=52.3% / DOWN=47.7%
+Phase 9  - Feature Engineering         : COMPLETE (2026-10-02)
+           2,706 clean rows with 8 technical indicators
+Phase 10 - Temporal Split & Scaling    : COMPLETE (2026-10-02)
+           Train:1963 / Val:495 / Test:248 (chronological split)
+Phase 11 - Classical Baselines         : COMPLETE (2026-10-02)
+           RF:52.42% / LR:50.00% / SVM:50.00% on 2025 Test Set
+Phase 12 - PCA Reduction               : COMPLETE (2026-10-02)
+           4 PCs, 94.89% cumulative variance; quantum range [0,pi] verified
+Phase 15 - VQC Architecture Tuning     : COMPLETE (2026-10-02)
+           VQC-5 (ZZ+SPSA, reps=1) selected; Val F1=0.6264
+Phase 16 - VQC Training                : COMPLETE (2026-10-02)
+           Test Acc=48.39%, F1=0.6257, AUC=0.4906
+Phase 18 - Statistical Analysis        : COMPLETE (2026-10-02)
+           All McNemar p-values > 0.50; no significant difference
+Phase 19 - Limitations Analysis        : COMPLETE (2026-10-02)
+           Ann. volatility: Train=17.52% -> Test=11.81% (33% drop)
+
+NOTES FOR REPRODUCIBILITY
+==========================
+1. The .venv virtual environment must be recreated using:
+      python -m venv .venv
+      .venv\Scripts\pip.exe install -r requirements.txt
+
+2. All scripts should be run from the quantum_project\ root directory
+   using the .venv Python interpreter:
+      .venv\Scripts\python.exe script.py
+
+3. For Jupyter notebooks, register the kernel with:
+      .venv\Scripts\python.exe -m ipykernel install --user --name nifty50_vqc
+
+4. Set UTF-8 encoding for Qiskit circuit display:
+      $env:PYTHONUTF8=1
+
+5. Random seed for reproducibility: 42 (numpy and sklearn)
+
+6. Dataset source: Local CSV files (2015-2025), user-provided
+   Do NOT use downloaded datasets without recording the source.
+
+============================================================
+END OF ENVIRONMENT INFO
+============================================================

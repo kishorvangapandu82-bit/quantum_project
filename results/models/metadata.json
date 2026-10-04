@@ -1,0 +1,17 @@
+{
+  "feature_cols": [
+    "daily_return",
+    "sma_5",
+    "sma_20",
+    "ema_12",
+    "ema_26",
+    "rsi_14",
+    "volatility_5",
+    "momentum_5"
+  ],
+  "n_pca_components": 4,
+  "class_labels": {
+    "0": "DOWN",
+    "1": "UP"
+  }
+}
