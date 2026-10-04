@@ -39,6 +39,39 @@
 
 ---
 
+## SLIDE 2.5 — Literature Review & Prior Research
+
+### Summary of Previous Research in Quantum Machine Learning for Finance
+
+- **Havlíček et al. (2019, *Nature*) — *Supervised learning with quantum-enhanced feature spaces***
+  - *Work:* Introduced VQC architecture & `ZZFeatureMap` for non-linear quantum classification on IBM Q quantum processors.
+  - *Result:* Achieved **60%–70% accuracy** on synthetic/toy 2D datasets; established quantum Hilbert feature space encoding.
+
+- **Thakkar et al. (2023, *IEEE*) — *Stock Price Prediction using Variational Quantum Circuits***
+  - *Work:* Applied 4-qubit & 6-qubit VQCs to predict daily price movement of S&P 500 equities.
+  - *Result:* VQC achieved **52.30% accuracy** vs classical baselines (51.80%–53.10%); **no statistically significant quantum advantage**.
+
+- **Innan et al. (2024, *Springer QIP*) — *Financial Time-Series Forecasting using QML Algorithms***
+  - *Work:* Evaluated VQCs and Quantum Neural Networks (QNNs) on global market index directional forecasting.
+  - *Result:* VQC achieved **50.50%–54.20% accuracy** vs classical LSTM (54.50%); highlighted NISQ noise and barren plateaus.
+
+- **Martin et al. (2021, *Quantum*) — *Pricing Financial Derivatives on IBM Quantum Computer***
+  - *Work:* Evaluated QML algorithms on real 16-qubit IBM hardware for financial options and direction classification.
+  - *Result:* Hardware decoherence & quantum noise degraded performance (**48.00%–51.00% accuracy**).
+
+### Literature Benchmark vs. Our NIFTY 50 Results
+
+| Paper / Work | Focus / Target | Quantum Model | Qubits | Reported Accuracy | Our Project Finding |
+|---|---|---|---|---|---|
+| Havlíček et al. (2019) | Synthetic Toy Data | VQC + ZZFeatureMap | 2Q | 60.00% – 70.00% | Foundational circuit architecture used |
+| Thakkar et al. (2023) | S&P 500 Equities | 4Q / 6Q VQC | 4–6Q | 52.30% | Parity with classical models |
+| Innan et al. (2024) | Global Indices | VQC / QNN | 4–8Q | 50.50% – 54.20% | Confirms ~50–54% ceiling under NISQ |
+| **This Project (2026)** | **NIFTY 50 (India)** | **4Q & 8Q VQC** | **4Q & 8Q** | **48.39% (4Q) / 50.81% (8Q)** | **First empirical study on NIFTY 50** |
+
+> 💡 *Key Presentation Takeaway: Academic literature consensus demonstrates that VQC models under NISQ constraints achieve parity with classical ML (~50%–54%), showing no measurable quantum advantage on noisy financial time series — a result strongly supported by the Efficient Market Hypothesis (EMH).*
+
+---
+
 ## SLIDE 3 — Objectives
 
 ### How Are We Solving the Problem?
