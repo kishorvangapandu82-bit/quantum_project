@@ -4,10 +4,9 @@ src/classical_models.py
 NIFTY50-VQC Project — Classical Baseline Machine Learning Models
 
 PURPOSE:
-    Implement, train, tune, and evaluate three classical ML baselines:
+    Implement, train, tune, and evaluate two classical ML baselines:
     1. Logistic Regression (Linear baseline)
-    2. Support Vector Machine (Kernel SVM with RBF/Linear kernel)
-    3. Random Forest Classifier (Ensemble decision trees)
+    2. Random Forest Classifier (Ensemble decision trees)
 
 LEAKAGE SAFEGUARD:
     - Trained ONLY on X_train_std, y_train (2015–2022)
@@ -26,7 +25,6 @@ Date:   2026-10-02
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -106,45 +104,6 @@ def train_logistic_regression(X_train, y_train, X_val, y_val, random_state=42):
             best_score = val_metrics['f1_score']
             best_model = model
             best_params = {'C': C}
-
-    best_val_metrics = evaluate_model(best_model, X_val, y_val)
-    return best_model, best_params, best_val_metrics
-
-
-def train_svm(X_train, y_train, X_val, y_val, random_state=42):
-    """
-    Train Support Vector Machine (SVM) with hyperparameter tuning over kernels, C, and gamma.
-
-    Args:
-        X_train, y_train: Training features and labels
-        X_val, y_val: Validation features and labels
-        random_state (int): Random seed for reproducibility
-
-    Returns:
-        tuple: (best_model, best_params, val_metrics)
-    """
-    best_model = None
-    best_score = -1.0
-    best_params = {}
-
-    param_grid = [
-        {'kernel': 'linear', 'C': 0.1},
-        {'kernel': 'linear', 'C': 1.0},
-        {'kernel': 'rbf', 'C': 0.1, 'gamma': 'scale'},
-        {'kernel': 'rbf', 'C': 1.0, 'gamma': 'scale'},
-        {'kernel': 'rbf', 'C': 10.0, 'gamma': 'scale'},
-        {'kernel': 'rbf', 'C': 1.0, 'gamma': 'auto'},
-    ]
-
-    for params in param_grid:
-        model = SVC(**params, probability=True, random_state=random_state)
-        model.fit(X_train, y_train)
-        val_metrics = evaluate_model(model, X_val, y_val)
-
-        if val_metrics['f1_score'] > best_score:
-            best_score = val_metrics['f1_score']
-            best_model = model
-            best_params = params
 
     best_val_metrics = evaluate_model(best_model, X_val, y_val)
     return best_model, best_params, best_val_metrics

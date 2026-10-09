@@ -14,7 +14,7 @@ This report presents an empirical investigation into whether a **Variational Qua
 
 The study uses 10 years of NIFTY 50 daily OHLCV data (2015–2025), with 8 engineered technical indicators reduced to 4 dimensions via Principal Component Analysis (PCA) for quantum encoding. The primary algorithm is a **4-Qubit VQC** built with Qiskit 2.x, using a `ZZFeatureMap` for feature encoding and `RealAmplitudes` as the variational ansatz, optimized via SPSA (Simultaneous Perturbation Stochastic Approximation) for 40 iterations.
 
-Evaluation on a strictly held-out 2025 test set (248 trading days) showed VQC achieved **48.39% accuracy**, compared to classical baselines: Logistic Regression (50.00%), SVM/Linear (50.00%), and Random Forest (52.42%). McNemar statistical significance testing confirmed that **no model is statistically superior** to any other (all p-values > 0.50). The study concludes that the 4-Qubit VQC, under NISQ simulation constraints, does not demonstrate a measurable quantum advantage over classical ML methods for this financial classification task.
+Evaluation on a strictly held-out 2025 test set (248 trading days) showed VQC achieved **48.39% accuracy**, compared to classical baselines: Logistic Regression (50.00%) and Random Forest (52.42%). McNemar statistical significance testing confirmed that **no model is statistically superior** to any other (all p-values > 0.50). The study concludes that the 4-Qubit VQC, under NISQ simulation constraints, does not demonstrate a measurable quantum advantage over classical ML methods for this financial classification task.
 
 ---
 
@@ -116,11 +116,11 @@ The solution follows a rigorous, end-to-end machine learning pipeline with stric
 
 9. **Architecture Tuning:** Test 5 VQC configurations on the validation set and select the best by F1-Score.
 
-10. **Final Evaluation:** Evaluate all models (VQC + 3 classical baselines) on the 2025 test set (touched only once). Apply McNemar tests for statistical significance.
+10. **Final Evaluation:** Evaluate all models (VQC + 2 classical baselines) on the 2025 test set (touched only once). Apply McNemar tests for statistical significance.
 
 ### Which Algorithm is Used?
 - **Primary:** Variational Quantum Classifier (VQC) — a parameterized quantum circuit trained via classical optimization
-- **Classical Baselines:** Logistic Regression, Support Vector Machine (Linear kernel), Random Forest
+- **Classical Baselines:** Logistic Regression, Random Forest
 
 ### How Does the Algorithm Analyze Complexity?
 - **Time:** VQC requires O(T × N × 2ⁿ) operations — exponential in qubit count n, making classical simulation impractical beyond ~30 qubits.
@@ -190,9 +190,8 @@ SPSA approximates the gradient using only two circuit evaluations per iteration 
            │ Quantum Pipeline                                  │ Classical Pipeline
            ▼                                                   ▼
   [PCA: 8D → 4D]                                    [Logistic Regression]
-  (fit on TRAIN only, 94.89% variance retained)     [SVM (Linear)]
-           │                                          [Random Forest]
-           ▼                                                   │
+  (fit on TRAIN only, 94.89% variance retained)     [Random Forest]
+           │                                                   │
   [Quantum Angle Encoding: [0, π]]                            │
   (MinMaxScaler, fit on TRAIN PCA only)                       │
            │                                                   │
@@ -229,7 +228,7 @@ SPSA approximates the gradient using only two circuit evaluations per iteration 
 6. Save arrays to `data/processed/nifty50_scaled_data.npz`
 
 **Phase 2 — Classical Baselines (phase11_classical_models.py):**
-1. Grid-search hyperparameters on validation set for LR, SVM, RF
+1. Grid-search hyperparameters on validation set for LR, RF
 2. Train each model on full training set with best hyperparameters
 3. Evaluate on 2025 test set; save metrics and figures
 
@@ -400,7 +399,7 @@ metrics_vqc = evaluate(y_test, y_pred_vqc, y_prob_vqc)
 | Quantum Framework | Qiskit | 2.5.2 | Quantum circuit building, simulation |
 | QML Library | qiskit-machine-learning | 0.9.1 | VQC implementation |
 | Quantum Simulator | Qiskit Aer (StatevectorSampler) | 0.17.2 | Exact CPU-based simulation |
-| Classical ML | scikit-learn | 1.9.1 | LR, SVM, RF, PCA, StandardScaler |
+| Classical ML | scikit-learn | 1.9.1 | LR, RF, PCA, StandardScaler |
 | Data Handling | pandas | 3.0.6 | CSV loading, DataFrame operations |
 | Numerical Computing | numpy | 2.4.6 | Array operations, NPZ file I/O |
 | Visualization | matplotlib, seaborn | latest | Plots, heatmaps, ROC curves |
@@ -538,20 +537,16 @@ The website (`website/index.html`) provides a **live stock direction prediction 
 | Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Balanced Acc |
 |-------|----------|-----------|--------|----------|---------|--------------|
 | **VQC (4-Qubit, ZZ+SPSA)** | **48.39%** | 0.4908 | **0.8629** | 0.6257 | 0.4906 | 48.39% |
-| Logistic Regression (C=0.001) | 50.00% | 0.5000 | 0.9919 | **0.6649** | 0.5223 | 50.00% |
-| SVM Linear (C=0.1) | 50.00% | 0.5000 | **1.0000** | **0.6667** | 0.4725 | 50.00% |
+| Logistic Regression (C=0.001) | 50.00% | 0.5000 | **0.9919** | **0.6649** | 0.5223 | 50.00% |
 | **Random Forest (50 trees, depth=3)** | **52.42%** | **0.5469** | 0.2823 | 0.3723 | **0.5306** | **52.42%** |
 
 ### McNemar Statistical Significance (Pairwise)
 
 | Model Pair | p-value | Interpretation |
 |------------|---------|---------------|
-| VQC vs Logistic Regression | > 0.50 | No significant difference |
-| VQC vs SVM | > 0.50 | No significant difference |
-| VQC vs Random Forest | > 0.50 | No significant difference |
-| LR vs SVM | > 0.50 | No significant difference |
-| LR vs Random Forest | > 0.50 | No significant difference |
-| SVM vs Random Forest | > 0.50 | No significant difference |
+| VQC vs Logistic Regression | 0.66 | No significant difference ($p > 0.05$) |
+| VQC vs Random Forest | 0.56 | No significant difference ($p > 0.05$) |
+| LR vs Random Forest | 0.68 | No significant difference ($p > 0.05$) |
 
 **All p-values > 0.50 → Performance differences are statistical noise, not genuine model superiority.**
 
@@ -617,7 +612,6 @@ An additional experiment was conducted (`phase21_8qubit_experiment.py`) to inves
 | VQC (4-qubit, SPSA 40 iter) | O(T × N × 2⁴) | 10–30 minutes |
 | VQC (8-qubit, SPSA 40+20 iter) | O(T × N × 2⁸) | 60–120 minutes |
 | Logistic Regression | O(N × d × iterations) | < 1 second |
-| SVM (Linear) | O(N² × d) | < 5 seconds |
 | Random Forest | O(k × N × log N × d) | < 10 seconds |
 
 Where: T = 40 iterations, N = 1,963 training samples, n = 4 or 8 qubits, d = 8 features, k = 50 trees.
@@ -633,18 +627,52 @@ Where: T = 40 iterations, N = 1,963 training samples, n = 4 or 8 qubits, d = 8 f
 | PCA Components | 4 × 8 = 32 floats | Not used |
 | Total simulation cost | O(N × 16) | O(N × 256) |
 
-**Generated Figures:**
-- `fig9_quantum_circuit.png` — 4-qubit VQC circuit diagram
-- `fig10_vqc_training_loss.png` — SPSA training loss curve (40 iterations)
-- `fig11_vqc_confusion_matrix.png` — VQC confusion matrix on 2025 test set
-- `fig12_quantum_vs_classical_roc.png` — Master ROC curves (all 4 models)
-- `fig13_regime_shifts.png` — Volatility regime shift analysis
-- `fig14_8qubit_comparison.png` — 8-qubit vs 4-qubit full metric comparison
-- `fig15_qubit_scaling_study.png` — Accuracy and F1 scaling bar chart (4Q vs 8Q)
-- `fig7_pca_variance.png` — Scree plot of PCA explained variance
-- `fig8_pca_loadings.png` — PCA component loading heatmap
-- `fig4_confusion_matrices.png` — All classical model confusion matrices
-- `fig5_roc_curves.png` — Classical model ROC curves
+### Visual Artifacts & Empirical Figures
+
+#### 1. Quantum Circuit Architecture
+![4-Qubit Quantum Circuit](../results/figures/fig9_quantum_circuit.png)
+*Figure 1: 4-Qubit Variational Quantum Classifier Circuit Diagram (`ZZFeatureMap` feature encoding + `RealAmplitudes` variational ansatz).*
+
+#### 2. VQC Training Convergence (SPSA)
+![VQC Training Loss](../results/figures/fig10_vqc_training_loss.png)
+*Figure 2: SPSA optimization loss trajectory over 40 iterations on 1,963 training samples.*
+
+#### 3. Master ROC Curves (VQC vs Classical Baselines)
+![Master ROC Curves](../results/figures/fig12_quantum_vs_classical_roc.png)
+*Figure 3: Master ROC curve comparison on 2025 Test Set (VQC AUC = 0.491, Logistic Regression AUC = 0.522, Random Forest AUC = 0.531).*
+
+#### 4. VQC Test Confusion Matrix
+![VQC Confusion Matrix](../results/figures/fig11_vqc_confusion_matrix.png)
+*Figure 4: VQC confusion matrix on 2025 Test Set (248 days).*
+
+#### 5. Classical Baselines ROC Curves & Confusion Matrices
+![Classical ROC Curves](../results/figures/fig5_roc_curves.png)
+*Figure 5: Classical baseline ROC curves (Logistic Regression & Random Forest).*
+
+![Classical Confusion Matrices](../results/figures/fig4_confusion_matrices.png)
+*Figure 6: Confusion matrices for classical baseline models on 2025 Test Set.*
+
+#### 6. Random Forest Feature Importance
+![Feature Importance](../results/figures/fig6_feature_importance.png)
+*Figure 7: Gini feature importance ranking across 8 engineered technical indicators.*
+
+#### 7. PCA Dimensionality Reduction & Feature Loadings
+![PCA Scree Plot](../results/figures/fig7_pca_variance.png)
+*Figure 8: Scree plot of cumulative explained variance for PCA components (94.89% retained in 4 components).*
+
+![PCA Component Loadings](../results/figures/fig8_pca_loadings.png)
+*Figure 9: Heatmap of technical indicator loadings across 4 principal components.*
+
+#### 8. Market Non-Stationarity & Regime Shifts
+![Market Regime Shifts](../results/figures/fig13_regime_shifts.png)
+*Figure 10: Annualized volatility and return distribution shift from Training (17.52%) to 2025 Test period (11.81%).*
+
+#### 9. 8-Qubit Scaling Experiment Comparison
+![8-Qubit Comparison](../results/figures/fig14_8qubit_comparison.png)
+*Figure 11: 4-Qubit vs 8-Qubit direct feature encoding performance comparison.*
+
+![Qubit Scaling Bar Chart](../results/figures/fig15_qubit_scaling_study.png)
+*Figure 12: Accuracy and F1-Score scaling benchmark (4Q vs 8Q).*
 
 ---
 
@@ -657,7 +685,7 @@ This project successfully implemented and empirically evaluated a **4-Qubit Vari
 - All 5 VQC architecture configurations were systematically evaluated, and the best (VQC-5: ZZFeatureMap + RealAmplitudes + SPSA) was identified and trained on the full 1,963-sample training set.
 - Final evaluation was performed on 248 previously unseen trading days from 2025.
 
-**The algorithm worked as designed, but revealed a key finding:** Under current NISQ-era simulation constraints (4 qubits, CPU-only), the VQC (48.39% accuracy) does not outperform classical baselines (50–52% accuracy). McNemar statistical tests confirm that **none of the 4 models is statistically superior** to any other — all p-values exceed 0.50. Performance differences are within the range of statistical noise.
+**The algorithm worked as designed, but revealed a key finding:** Under current NISQ-era simulation constraints (4 qubits, CPU-only), the VQC (48.39% accuracy) does not outperform classical baselines (50–52% accuracy). McNemar statistical tests confirm that **none of the models is statistically superior** to any other — all p-values exceed 0.50. Performance differences are within the range of statistical noise.
 
 **Key contributions:**
 1. First empirical VQC study on 10 years of NIFTY 50 daily data

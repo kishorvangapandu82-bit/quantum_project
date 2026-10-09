@@ -57,18 +57,16 @@ Key functions:
 - it_and_transform_pca(X_train_std, X_val_std, X_test_std) — returns dict with quantum-ready arrays
 
 ### classical_models.py
-Trains three classical ML baselines with validation-based hyperparameter tuning.
+Trains two classical ML baselines with validation-based hyperparameter tuning.
 
 | Model | Hyperparameter grid | Best config (2025 Test) |
 |-------|--------------------|-----------------------|
-| Logistic Regression | C in {0.001, 0.01, 0.1, 1.0, 10.0, 100.0} | C=0.001, Acc=50.00% |
-| SVM | kernels (linear, rbf) x C values | linear, C=0.1, Acc=50.00% |
+| Logistic Regression | C in {0.001, 0.01, 0.1, 1.0, 100.0} | C=0.001, Acc=50.00% |
 | Random Forest | n_estimators x max_depth x min_samples_split | n=50, depth=3, Acc=52.42% |
 
 Key functions:
-- 	rain_logistic_regression(X_train, y_train, X_val, y_val) -> (model, params, val_metrics)
-- 	rain_svm(...) -> (model, params, val_metrics)
-- 	rain_random_forest(...) -> (model, params, val_metrics)
+- train_logistic_regression(X_train, y_train, X_val, y_val) -> (model, params, val_metrics)
+- train_random_forest(...) -> (model, params, val_metrics)
 - evaluate_model(model, X, y_true) -> dict with accuracy, precision, recall, f1, roc_auc, bal_acc, cm
 
 ### vqc_model.py

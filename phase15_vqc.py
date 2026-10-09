@@ -27,7 +27,6 @@ from src.vqc_model import VQCClassifierWrapper
 from src.quantum_circuit import plot_quantum_circuit
 from src.classical_models import (
     train_logistic_regression,
-    train_svm,
     train_random_forest,
     evaluate_model
 )
@@ -83,7 +82,6 @@ def plot_master_roc_comparison(all_models_results, save_path):
     colors = {
         'Variational Quantum Classifier (VQC)': '#882255',
         'Logistic Regression': '#1f77b4',
-        'Support Vector Machine (SVM)': '#ff7f0e',
         'Random Forest Classifier': '#2ca02c'
     }
 
@@ -223,7 +221,6 @@ def main():
     # 3. Fit Classical Baselines for Comparison
     log_print("\n⚔️ 3. Fitting Classical Baseline Models for Master Comparison...")
     lr_model, _, _   = train_logistic_regression(X_train_std, y_train, X_val_std, y_val)
-    svm_model, _, _  = train_svm(X_train_std, y_train, X_val_std, y_val)
     rf_model, _, _   = train_random_forest(X_train_std, y_train, X_val_std, y_val)
 
     all_models_results = {
@@ -233,10 +230,6 @@ def main():
         },
         'Logistic Regression': {
             'test_metrics': evaluate_model(lr_model, X_test_std, y_test),
-            'y_test': y_test
-        },
-        'Support Vector Machine (SVM)': {
-            'test_metrics': evaluate_model(svm_model, X_test_std, y_test),
             'y_test': y_test
         },
         'Random Forest Classifier': {

@@ -68,7 +68,6 @@
 - **Date:** 2026-10-02  |  **Phase:** Phase 11  |  **Status:** COMPLETE
 - **Result (2025 Test Set):**
   - Logistic Regression (C=0.001):         Acc=50.00%, F1=0.6649, AUC=0.5223
-  - SVM (kernel=linear, C=0.1):            Acc=50.00%, F1=0.6667, AUC=0.4725
   - Random Forest (n_est=50, max_depth=3): Acc=52.42%, F1=0.3723, AUC=0.5306
 - Figures: fig4_confusion_matrices.png, fig5_roc_curves.png, fig6_feature_importance.png.
 - Saved: results/tables/table2_classical_baselines.csv.
@@ -101,7 +100,6 @@
 - **Date:** 2026-10-02  |  **Phase:** Phase 18  |  **Status:** COMPLETE
 - McNemar Exact Test (binomial, two-sided, alpha=0.05) on 248-day test set:
   - VQC vs Logistic Regression: b=9,  c=12,  p=0.6636 -> NOT significant
-  - VQC vs SVM:                 b=10, c=13,  p=0.6776 -> NOT significant
   - VQC vs Random Forest:       b=93, c=102, p=0.5668 -> NOT significant
   - LR vs Random Forest:        b=89, c=95,  p=0.7125 -> NOT significant
 - Saved: results/tables/table6_mcnemar_test.csv.
@@ -122,7 +120,6 @@
 |--------------------------|----------|-----------|--------|----------|---------|--------------|
 | VQC (4 Qubits, ZZ+SPSA)  | 48.39%   | 0.4908    | 0.8629 | 0.6257   | 0.4906  | 48.39%       |
 | Logistic Regression       | 50.00%   | 0.5000    | 0.9919 | 0.6649   | 0.5223  | 50.00%       |
-| SVM (Linear)              | 50.00%   | 0.5000    | 1.0000 | 0.6667   | 0.4725  | 50.00%       |
 | Random Forest             | 52.42%   | 0.5469    | 0.2823 | 0.3723   | 0.5306  | 52.42%       |
 
 **Statistical Conclusion:** No model demonstrates statistically significant superiority. All McNemar p-values > 0.50. All models perform near random-chance on 2025 NIFTY 50.

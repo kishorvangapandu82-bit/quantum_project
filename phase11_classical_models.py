@@ -26,7 +26,6 @@ sys.path.insert(0, '.')
 from src.classical_models import (
     evaluate_model,
     train_logistic_regression,
-    train_svm,
     train_random_forest
 )
 
@@ -39,9 +38,9 @@ os.makedirs(TAB_DIR, exist_ok=True)
 
 
 def plot_confusion_matrices(results, feature_cols):
-    """Generate side-by-side confusion matrix heatmaps for all 3 classical models."""
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-    model_names = ['Logistic Regression', 'Support Vector Machine', 'Random Forest']
+    """Generate side-by-side confusion matrix heatmaps for classical models."""
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5))
+    model_names = ['Logistic Regression', 'Random Forest']
 
     for i, name in enumerate(model_names):
         cm = results[name]['test_metrics']['confusion_matrix']
@@ -61,12 +60,12 @@ def plot_confusion_matrices(results, feature_cols):
 
 
 def plot_roc_curves(results):
-    """Generate combined ROC curve plot for all 3 classical models on Test set."""
+    """Generate combined ROC curve plot for classical models on Test set."""
     from sklearn.metrics import roc_curve, auc
 
     plt.figure(figsize=(8, 6))
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-    model_names = ['Logistic Regression', 'Support Vector Machine', 'Random Forest']
+    colors = ['#1f77b4', '#2ca02c']
+    model_names = ['Logistic Regression', 'Random Forest']
 
     for i, name in enumerate(model_names):
         y_prob = results[name]['test_metrics']['y_prob']
@@ -162,25 +161,8 @@ def main():
         'y_test': y_test
     }
 
-    # 2. Support Vector Machine (SVM)
-    print("\n🔹 Training & Tuning 2/3: Support Vector Machine (SVM)...")
-    svm_model, svm_params, svm_val = train_svm(X_train_std, y_train, X_val_std, y_val)
-    svm_tr   = evaluate_model(svm_model, X_train_std, y_train)
-    svm_te   = evaluate_model(svm_model, X_test_std, y_test)
-    print(f"   Best Parameters: {svm_params}")
-    print(f"   Test Accuracy:   {svm_te['accuracy']:.2%} | F1-Score: {svm_te['f1_score']:.4f} | ROC-AUC: {svm_te['roc_auc']:.4f}")
-
-    results['Support Vector Machine'] = {
-        'model': svm_model,
-        'params': svm_params,
-        'train_metrics': svm_tr,
-        'val_metrics': svm_val,
-        'test_metrics': svm_te,
-        'y_test': y_test
-    }
-
-    # 3. Random Forest
-    print("\n🔹 Training & Tuning 3/3: Random Forest Classifier...")
+    # 2. Random Forest
+    print("\n🔹 Training & Tuning 2/2: Random Forest Classifier...")
     rf_model, rf_params, rf_val = train_random_forest(X_train_std, y_train, X_val_std, y_val)
     rf_tr   = evaluate_model(rf_model, X_train_std, y_train)
     rf_te   = evaluate_model(rf_model, X_test_std, y_test)

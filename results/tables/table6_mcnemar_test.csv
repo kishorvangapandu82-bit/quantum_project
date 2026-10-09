@@ -1,5 +1,4 @@
 Comparison,b_m1_right_m2_wrong,c_m1_wrong_m2_right,p_value,Significant_at_0.05
 VQC vs Logistic Regression,9,12,0.6636238098144531,NO (No Statistically Significant Difference)
-VQC vs SVM,10,13,0.6776394844055176,NO (No Statistically Significant Difference)
 VQC vs Random Forest,93,102,0.5668305073491768,NO (No Statistically Significant Difference)
 Logistic Regression vs Random Forest,89,95,0.7125307737127085,NO (No Statistically Significant Difference)

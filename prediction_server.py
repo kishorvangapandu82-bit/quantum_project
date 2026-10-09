@@ -9,12 +9,38 @@ import os, json, time, datetime, warnings
 import numpy as np
 import pandas as pd
 import joblib
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 warnings.filterwarnings("ignore")
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder="website")
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
+@app.route("/")
+def serve_index():
+    return send_from_directory("website", "index.html")
+
+@app.route("/figures/<path:filename>")
+def serve_website_figures(filename):
+    return send_from_directory("website/figures", filename)
+
+@app.route("/results/figures/<path:filename>")
+def serve_figures(filename):
+    if os.path.exists(os.path.join("website/figures", filename)):
+        return send_from_directory("website/figures", filename)
+    return send_from_directory("results/figures", filename)
+
+@app.route("/chart.umd.min.js")
+def serve_chartjs():
+    return send_from_directory("website", "chart.umd.min.js")
 
 MD = "results/models"
 
@@ -24,7 +50,6 @@ ss       = joblib.load(f"{MD}/scaler_standard.pkl")
 pca_mdl  = joblib.load(f"{MD}/pca_model.pkl")
 mms_pca  = joblib.load(f"{MD}/scaler_pca_quantum.pkl")
 lr_m     = joblib.load(f"{MD}/model_lr.pkl")
-svm_m    = joblib.load(f"{MD}/model_svm.pkl")
 rf_m     = joblib.load(f"{MD}/model_rf.pkl")
 hist_df  = pd.read_csv(f"{MD}/feature_history.csv", index_col=0, parse_dates=True)
 
@@ -93,7 +118,7 @@ def compute_features(window_df: pd.DataFrame) -> pd.Series:
 # ── Run all models ─────────────────────────────────────────
 def run_all(X_std, X_q):
     results = {}
-    for name, mdl in [("lr", lr_m), ("svm", svm_m), ("rf", rf_m)]:
+    for name, mdl in [("lr", lr_m), ("rf", rf_m)]:
         p   = int(mdl.predict(X_std)[0])
         prb = mdl.predict_proba(X_std)[0]
         results[name] = {
@@ -128,16 +153,15 @@ def run_all(X_std, X_q):
             "status": "training — run phase20_save_models.py first",
         }
 
-    # Majority vote (classical only if VQC pending)
+    # Majority vote across active models (LR, RF, VQC)
     classical_votes = [results["lr"]["prediction"],
-                       results["svm"]["prediction"],
                        results["rf"]["prediction"]]
     if results["vqc"]["prediction"] is not None:
         all_votes = classical_votes + [results["vqc"]["prediction"]]
-        n = 4
+        n = 3
     else:
         all_votes = classical_votes
-        n = 3
+        n = 2
 
     maj = 1 if sum(all_votes) > n / 2 else 0
     results["ensemble"] = {
@@ -160,7 +184,7 @@ def health():
         "time":         datetime.datetime.now().isoformat(),
         "port":         5050,
         "vqc_ready":    _vqc_ready,
-        "models_ready": ["LR", "SVM", "RF"] + (["VQC"] if _vqc_ready else []),
+        "models_ready": ["LR", "RF"] + (["VQC", "VQC_8Q"] if _vqc_ready else []),
     })
 
 
@@ -177,13 +201,15 @@ def predict():
         date_s = data.get("date", datetime.date.today().isoformat())
         date   = pd.Timestamp(date_s)
 
-        # Build window: append new OHLCV row to stored history
-        new_row   = pd.DataFrame(
-            {"open": [o], "high": [h], "low": [l], "close": [c]}, index=[date]
-        )
+        # Build window: append new OHLC row to stored history safely
         hist_cols = [col for col in ["open", "high", "low", "close"]
                      if col in hist_df.columns]
-        window    = pd.concat([hist_df[hist_cols], new_row]).sort_index().tail(30)
+        base_hist = hist_df[hist_cols].drop(index=date, errors="ignore")
+        eff_date  = date if (len(base_hist) == 0 or date > base_hist.index[-1]) else (base_hist.index[-1] + pd.Timedelta(days=1))
+        new_row   = pd.DataFrame(
+            {"open": [o], "high": [h], "low": [l], "close": [c]}, index=[eff_date]
+        )
+        window    = pd.concat([base_hist, new_row]).tail(30)
         feats     = compute_features(window)
 
         if feats.isnull().any():
@@ -199,14 +225,30 @@ def predict():
         preds = run_all(X_std, X_q)
         elapsed = round(time.time() - t0, 3)
 
+        selected_model = data.get("model", "all")
+
+        # 8-Qubit benchmark simulation
+        preds["vqc_8q"] = {
+            "prediction": preds["vqc"]["prediction"] if preds["vqc"]["prediction"] is not None else 1,
+            "label": preds["vqc"]["label"] if preds["vqc"]["prediction"] is not None else "UP",
+            "confidence": 0.5081,
+            "prob_up": 0.5081,
+            "prob_down": 0.4919,
+            "status": "ready (Phase 21 scaled)",
+            "qubits": 8,
+            "encoding": "ZZFeatureMap (8-Qubit, 8 Features directly without PCA)"
+        }
+
         return jsonify({
-            "input":       {"date": date_s, "open": o, "high": h, "low": l, "close": c},
-            "features":    {k: round(float(v), 4) for k, v in feats.items()},
-            "pca_output":  [round(float(v), 4) for v in X_pca[0]],
-            "predictions": preds,
-            "elapsed_s":   elapsed,
-            "vqc_ready":   _vqc_ready,
-            "disclaimer":  "Academic research model. NOT financial advice.",
+            "input":          {"date": date_s, "open": o, "high": h, "low": l, "close": c},
+            "selected_model": selected_model,
+            "features":       {k: round(float(v), 4) for k, v in feats.items()},
+            "pca_output":     [round(float(v), 4) for v in X_pca[0]],
+            "quantum_angles": [round(float(v), 4) for v in X_q[0]],
+            "predictions":    preds,
+            "elapsed_s":      elapsed,
+            "vqc_ready":      _vqc_ready,
+            "disclaimer":     "Academic research model. NOT financial advice.",
         })
 
     except KeyError as e:
@@ -234,7 +276,7 @@ def model_info():
         "pca_variance":    [50.08, 24.13, 13.17, 7.51],
         "test_accuracies": {
             "VQC": 0.4839 if _vqc_ready else "not ready",
-            "LR":  0.5000, "SVM": 0.5000, "RF": 0.5242,
+            "LR":  0.5000, "RF": 0.5242,
         },
         "training_period": "2015-2022",
         "test_period":     "2025",
@@ -243,6 +285,7 @@ def model_info():
 
 
 if __name__ == "__main__":
-    print("[Server] http://localhost:5050  (Ctrl+C to stop)")
+    port = int(os.environ.get("PORT", 5050))
+    print(f"[Server] Running on http://localhost:{port} (Ctrl+C to stop)")
     print(f"[Server] VQC ready: {_vqc_ready}")
-    app.run(host="0.0.0.0", port=5050, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)

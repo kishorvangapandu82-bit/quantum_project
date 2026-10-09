@@ -11,7 +11,7 @@ This project investigates whether a **Variational Quantum Classifier (VQC)** can
 - **Classification task:** Binary — UP (1) or DOWN (0) next-day direction
 - **Dataset:** NIFTY 50 index, 2015-2025, 2,706 clean trading days
 - **Quantum model:** 4-Qubit VQC with ZZFeatureMap + RealAmplitudes ansatz (SPSA optimizer)
-- **Classical baselines:** Logistic Regression, SVM (Linear), Random Forest
+- **Classical baselines:** Logistic Regression, Random Forest
 
 **Main finding:** No statistically significant advantage for 4-qubit VQC over classical methods under NISQ simulation constraints (McNemar p > 0.50 for all model pairs).
 
@@ -19,7 +19,7 @@ This project investigates whether a **Variational Quantum Classifier (VQC)** can
 
 ## Directory Structure
 
-`
+```
 quantum_project/
 |-- README.md                         <- This file
 |-- requirements.txt                  <- Full pinned dependencies
@@ -44,7 +44,7 @@ quantum_project/
 |   |-- features.py                   <- 8 technical indicators
 |   |-- preprocessing.py             <- Temporal split + StandardScaler/MinMaxScaler
 |   |-- pca_reduction.py             <- PCA 8D->4D + [0,pi] quantum angle encoding
-|   |-- classical_models.py          <- LR, SVM, Random Forest
+|   |-- classical_models.py          <- LR, Random Forest
 |   |-- vqc_model.py                 <- VQCClassifierWrapper (Qiskit 2.x)
 |   |-- quantum_circuit.py           <- ZZFeatureMap, RealAmplitudes, circuit diagram
 |
@@ -68,7 +68,7 @@ quantum_project/
     |-- methodology.md               <- Detailed experimental methodology
     |-- experiment_log.md            <- Phase-by-phase experiment log (EXP-001 to EXP-016)
     |-- environment_info.txt         <- System & package version info
-`
+```
 
 ---
 
@@ -78,7 +78,6 @@ quantum_project/
 |-------------------------|----------|-----------|--------|----------|---------|--------------|
 | VQC (4 Qubits, ZZ+SPSA) | 48.39%  | 0.4908    | 0.8629 | 0.6257   | 0.4906  | 48.39%       |
 | Logistic Regression      | 50.00%  | 0.5000    | 0.9919 | 0.6649   | 0.5223  | 50.00%       |
-| SVM (Linear)             | 50.00%  | 0.5000    | 1.0000 | 0.6667   | 0.4725  | 50.00%       |
 | Random Forest            | 52.42%  | 0.5469    | 0.2823 | 0.3723   | 0.5306  | 52.42%       |
 
 **McNemar Statistical Significance:** All p-values > 0.50 — no model is statistically superior to any other.

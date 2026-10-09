@@ -104,12 +104,11 @@ Chronological splitting is used. Random shuffling of time-series data is NOT per
 
 ## 8. Classical Baselines Results (2025 Test Set)
 
-Three classical ML models were trained on the 2015–2022 Training set, hyperparameter-tuned on Validation (2023–2024), and evaluated on the 2025 Test set:
+Two classical ML models were trained on the 2015–2022 Training set, hyperparameter-tuned on Validation (2023–2024), and evaluated on the 2025 Test set:
 
 | Model | Best Hyperparameters | Test Accuracy | Precision | Recall | F1-Score | ROC-AUC | Balanced Acc |
 |-------|----------------------|---------------|-----------|--------|----------|---------|--------------|
 | **Logistic Regression** | `C=0.001` | **50.00%** | 0.5000 | 0.9919 | 0.6649 | 0.5223 | 50.00% |
-| **SVM (Linear)** | `kernel='linear', C=0.1` | **50.00%** | 0.5000 | 1.0000 | 0.6667 | 0.4725 | 50.00% |
 | **Random Forest** | `n_estimators=50, max_depth=3` | **52.42%** | 0.5469 | 0.2823 | 0.3723 | 0.5306 | 52.42% |
 
 All models were evaluated strictly on standardized features without data leakage.
@@ -196,7 +195,6 @@ All models were evaluated strictly on the **2025 Test Set** (248 trading days) u
 |------------|----------|-----------|--------|----------|---------|--------------|
 | **VQC (4 Qubits)** | **48.39%** | 0.4908 | 0.8629 | 0.6257 | 0.4906 | 48.39% |
 | **Logistic Regression** | **50.00%** | 0.5000 | 0.9919 | **0.6649** | 0.5223 | 50.00% |
-| **SVM (Linear)** | **50.00%** | 0.5000 | 1.0000 | **0.6667** | 0.4725 | 50.00% |
 | **Random Forest** | **52.42%** | **0.5469** | 0.2823 | 0.3723 | **0.5306** | **52.42%** |
 
 *All results recorded from empirical execution without data leakage.*

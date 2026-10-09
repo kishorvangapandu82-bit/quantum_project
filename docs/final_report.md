@@ -8,7 +8,7 @@ Predicting daily stock market direction is a classic challenge in financial engi
 
 Using a strict chronological split (Training: 2015–2022, 1,963 days; Validation: 2023–2024, 495 days; Test: 2025, 248 days) and data-leakage-free feature scaling, eight technical indicators were reduced via Principal Component Analysis (PCA) to 4 principal components capturing **94.89% cumulative variance**. A 4-qubit quantum architecture featuring a `ZZFeatureMap` for non-linear feature mapping and a `RealAmplitudes` variational ansatz trained via SPSA optimization achieved **48.39% accuracy** and **0.6257 F1-score** on the untouched 2025 Test Set. 
 
-Benchmarking against classical machine learning models (Logistic Regression: 50.00%, Support Vector Machine: 50.00%, Random Forest: 52.42%) and McNemar's statistical significance test ($p = 0.6636$) reveals **no statistically significant advantage** for current 4-qubit VQC models over classical baselines in daily market direction forecasting.
+Benchmarking against classical machine learning models (Logistic Regression: 50.00%, Random Forest: 52.42%) and McNemar's statistical significance test ($p = 0.6636$) reveals **no statistically significant advantage** for current 4-qubit VQC models over classical baselines in daily market direction forecasting.
 
 ---
 
@@ -72,7 +72,6 @@ PCA components were linearly scaled to $[0, \pi]$ for direct Pauli-Z rotation an
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Variational Quantum Classifier (VQC)** | **48.39%** | 0.4908 | 0.8629 | **0.6257** | **0.4906** | 48.39% |
 | **Logistic Regression** | **50.00%** | 0.5000 | 0.9919 | **0.6649** | **0.5223** | 50.00% |
-| **Support Vector Machine (SVM)** | **50.00%** | 0.5000 | 1.0000 | **0.6667** | **0.4725** | 50.00% |
 | **Random Forest Classifier** | **52.42%** | **0.5469** | 0.2823 | **0.3723** | **0.5306** | **52.42%** |
 
 ---
@@ -81,7 +80,6 @@ PCA components were linearly scaled to $[0, \pi]$ for direct Pauli-Z rotation an
 
 ### McNemar's Test ($p$-value Matrix):
 - **VQC vs Logistic Regression:** $p = 0.6636$ (Not Statistically Significant)
-- **VQC vs SVM:** $p = 0.6776$ (Not Statistically Significant)
 - **VQC vs Random Forest:** $p = 0.5668$ (Not Statistically Significant)
 
 ### Error Breakdown:

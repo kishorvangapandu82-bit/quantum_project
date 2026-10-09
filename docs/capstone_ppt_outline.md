@@ -29,7 +29,7 @@
 - Quantum Machine Learning (QML) has been proposed as a potential breakthrough — but **no empirical study** has tested a VQC on NIFTY 50 daily direction classification using real 10-year market data.
 
 ### Why Does This Problem Need to Be Solved?
-- Classical ML models (Logistic Regression, SVM, Random Forest) routinely fail to beat random chance (~50%) on daily stock direction.
+- Classical ML models (Logistic Regression, Random Forest) routinely fail to beat random chance (~50%) on daily stock direction.
 - **Research question:** *Can a Variational Quantum Classifier (VQC) classify the next-day price direction of the NIFTY 50 index, and how does it compare against classical ML baselines?*
 - Understanding QML performance on noisy real-world financial data is critical before deploying quantum computing resources in finance.
 
@@ -80,7 +80,7 @@
 3. Apply **Principal Component Analysis (PCA)** to reduce 8 features to 4 quantum-compatible components
 4. Encode 4D classical data into **quantum angles** using ZZFeatureMap
 5. Train a **Variational Quantum Classifier (VQC)** using the SPSA optimizer
-6. Evaluate VQC against **3 classical baselines** on the 2025 holdout test set
+6. Evaluate VQC against **2 classical baselines** on the 2025 holdout test set
 7. Perform **McNemar statistical significance testing** to determine if any model is genuinely superior
 
 ### Which Algorithm is Used?
@@ -88,7 +88,7 @@
   - Feature Map: ZZFeatureMap (ZZ entanglement, 1 repetition)
   - Ansatz: RealAmplitudes (1 repetition, 8 trainable parameters)
   - Optimizer: SPSA (Simultaneous Perturbation Stochastic Approximation)
-- **Classical Baselines:** Logistic Regression, SVM (Linear), Random Forest
+- **Classical Baselines:** Logistic Regression, Random Forest
 
 ---
 
@@ -232,7 +232,6 @@ OUTPUT:
 | VQC Statevector (per sample) | **O(2^n) = O(16)** | 4 qubits |
 | Trainable Parameters | O(p) = O(8) | 8 variational parameters |
 | PCA Components | O(k * d) = O(32) | 4 components × 8 features |
-| Classical ML (SVM) | O(N_sv * d) | Support vectors only |
 
 ---
 
@@ -294,8 +293,7 @@ y_pred = vqc.predict(X_test_quantum)
 | Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
 |-------|----------|-----------|--------|----------|---------|
 | **VQC (4 Qubits)** | 48.39% | 0.4908 | **0.8629** | 0.6257 | 0.4906 |
-| Logistic Regression | 50.00% | 0.5000 | 0.9919 | **0.6649** | 0.5223 |
-| SVM (Linear) | 50.00% | 0.5000 | **1.0000** | **0.6667** | 0.4725 |
+| Logistic Regression | 50.00% | 0.5000 | **0.9919** | **0.6649** | 0.5223 |
 | **Random Forest** | **52.42%** | **0.5469** | 0.2823 | 0.3723 | **0.5306** |
 
 **McNemar Test:** All p-values > 0.50 — no model is statistically superior.

@@ -22,7 +22,6 @@ warnings.filterwarnings('ignore')
 sys.path.insert(0, '.')
 from src.classical_models import (
     train_logistic_regression,
-    train_svm,
     train_random_forest,
     evaluate_model
 )
@@ -88,11 +87,9 @@ def main():
     # Fit Classical
     print("⚙️ Evaluating Classical baselines predictions...")
     lr, _, _  = train_logistic_regression(X_train_std, y_train, X_val_std, y_val)
-    svm, _, _ = train_svm(X_train_std, y_train, X_val_std, y_val)
     rf, _, _  = train_random_forest(X_train_std, y_train, X_val_std, y_val)
 
     y_pred_lr  = lr.predict(X_test_std)
-    y_pred_svm = svm.predict(X_test_std)
     y_pred_rf  = rf.predict(X_test_std)
 
     # Run McNemar tests
@@ -100,7 +97,6 @@ def main():
     print("-" * 80)
     tests = [
         run_mcnemar_test(y_test, y_pred_vqc, y_pred_lr,  "VQC", "Logistic Regression"),
-        run_mcnemar_test(y_test, y_pred_vqc, y_pred_svm, "VQC", "SVM"),
         run_mcnemar_test(y_test, y_pred_vqc, y_pred_rf,  "VQC", "Random Forest"),
         run_mcnemar_test(y_test, y_pred_lr,  y_pred_rf,  "Logistic Regression", "Random Forest")
     ]
@@ -123,12 +119,11 @@ def main():
     models_preds = [
         ('VQC (4 Qubits)', y_pred_vqc),
         ('Logistic Regression', y_pred_lr),
-        ('Support Vector Machine', y_pred_svm),
         ('Random Forest', y_pred_rf)
     ]
 
     for name, y_pred in models_preds:
-        cm = evaluate_model(lr, X_test_std, y_test)['confusion_matrix'] if 'Logistic' in name else evaluate_model(vqc, X_test_q, y_test)['confusion_matrix'] if 'VQC' in name else evaluate_model(svm, X_test_std, y_test)['confusion_matrix'] if 'SVM' in name else evaluate_model(rf, X_test_std, y_test)['confusion_matrix']
+        cm = evaluate_model(lr, X_test_std, y_test)['confusion_matrix'] if 'Logistic' in name else evaluate_model(vqc, X_test_q, y_test)['confusion_matrix'] if 'VQC' in name else evaluate_model(rf, X_test_std, y_test)['confusion_matrix']
         tn, fp, fn, tp = cm.ravel()
         sens = tp / (tp + fn) if (tp + fn) > 0 else 0
         spec = tn / (tn + fp) if (tn + fp) > 0 else 0

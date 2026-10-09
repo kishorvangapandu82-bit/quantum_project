@@ -118,7 +118,7 @@ According to the **Efficient Market Hypothesis (EMH)** proposed by Eugene Fama (
 - As a result, standard machine learning models routinely struggle to exceed ~50%–55% directional accuracy over long periods.
 
 ## 3.3 Project Goal & Core Research Question
-**Research Question:** *Can a 4-qubit or 8-qubit Variational Quantum Classifier outperform classical ML baselines (Logistic Regression, SVM, Random Forest) on NIFTY 50 daily direction prediction, or does QML face the same fundamental accuracy limits under NISQ constraints?*
+**Research Question:** *Can a 4-qubit or 8-qubit Variational Quantum Classifier outperform classical ML baselines (Logistic Regression, Random Forest) on NIFTY 50 daily direction prediction, or does QML face the same fundamental accuracy limits under NISQ constraints?*
 
 ---
 
@@ -246,7 +246,7 @@ quantum_project/
 | `src/features/pca_reduction.py` | PCA module that scales data using `StandardScaler` fitted ONLY on training set and reduces 8D indicators to 4D components. |
 | `src/quantum/vqc_model.py` | Core Qiskit circuit builder constructing `ZZFeatureMap` and `RealAmplitudes` ansatz. |
 | `src/quantum/train_vqc.py` | Quantum model training loop running SPSA optimizer for 40 iterations on train set. |
-| `src/models/train_baselines.py` | Classical ML trainer script fitting Logistic Regression, SVM (Linear), and Random Forest classifiers. |
+| `src/models/train_baselines.py` | Classical ML trainer script fitting Logistic Regression and Random Forest classifiers. |
 | `src/evaluation/evaluate_all.py` | Master evaluation script computing Accuracy, F1, ROC-AUC, Confusion Matrices, and McNemar test $p$-values. |
 | `src/quantum/phase21_8qubit_experiment.py` | 8-Qubit scaling experiment script running VQC directly on all 8 raw features without PCA reduction. |
 | `docs/capstone_report.md` | Complete formal Capstone Project report document with literature review and reference list. |
@@ -264,7 +264,6 @@ Evaluated on 248 strictly untouched trading days from 2025:
 |---|---|---|---|---|---|---|
 | **VQC (4-Qubit)** | **48.39%** | 51.58% | 39.52% | 44.75% | 0.4795 | 0.4870 |
 | **Logistic Regression** | **50.00%** | 50.00% | 0.81% | 1.59% | 0.4721 | 0.5000 |
-| **SVM (Linear)** | **50.00%** | 50.00% | 100.00% | 66.67% | 0.4908 | 0.5000 |
 | **Random Forest** | **52.42%** | 52.46% | 51.61% | 52.03% | 0.4947 | 0.5242 |
 
 > **Observations:**
@@ -278,7 +277,6 @@ The **McNemar Test** evaluates whether the discordance in predictions between tw
 | Model Pair | McNemar Statistic ($\chi^2$) | $p$-value | Conclusion |
 |---|---|---|---|
 | VQC vs Logistic Regression | 0.0816 | **0.7751** | No Significant Difference ($p > 0.05$) |
-| VQC vs SVM (Linear) | 0.0751 | **0.7841** | No Significant Difference ($p > 0.05$) |
 | VQC vs Random Forest | 0.3805 | **0.5373** | No Significant Difference ($p > 0.05$) |
 
 **Scientific Finding:** Because all $p$-values are substantially greater than $\alpha = 0.05$, **no model is statistically superior to any other**. The performance variation is attributed purely to random sampling noise.
